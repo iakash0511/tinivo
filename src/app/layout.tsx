@@ -25,7 +25,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Add inside <head> */}
         <link
           href="https://fonts.googleapis.com/css2?family=Nunito&family=Poppins:wght@700&family=Quicksand:wght@700&family=Raleway&display=swap"
           rel="stylesheet"

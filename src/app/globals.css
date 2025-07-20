@@ -1,3 +1,3 @@
-@tailwind base;
-@tailwind components;
+@config "../../tailwind.config.ts";
+@import "tailwindcss";
 @tailwind utilities;

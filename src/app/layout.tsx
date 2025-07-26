@@ -23,10 +23,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${poppins.variable} ${raleway.variable} ${nunito.variable} ${quicksand.variable}`}>
       <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Nunito&family=Poppins:wght@700&family=Quicksand:wght@700&family=Raleway&display=swap"
-          rel="stylesheet"
-        />
         <link rel="icon" href="/assets/favicon.ico" sizes="any" />
       </head>
       <body className="font-body bg-white bg-gradient-to-br from-white to-white/80 text-neutral-dark">

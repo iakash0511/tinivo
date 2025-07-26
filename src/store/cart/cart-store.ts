@@ -8,6 +8,7 @@ type CartItem = {
   quantity: number;
   quantityLeft?: number;
   giftWrap?: boolean;
+  image?: string; 
 };
 
 type CartStore = {

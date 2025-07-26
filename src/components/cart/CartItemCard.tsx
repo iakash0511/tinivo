@@ -5,16 +5,9 @@ import { Minus, Plus, Trash2 } from 'lucide-react';
 import { useCart } from '@/store/cart/cart-store';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
+import { CartItemCardProps } from '@/interface/CartItemsInterface';
 
-type CartItemCardProps = {
-  id: string;
-  name: string;
-  price: number;
-  image: string;
-  quantity: number;
-  giftWrap?: boolean;
-};
+
 
 export default function CartItemCard({
   id,

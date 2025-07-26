@@ -3,7 +3,6 @@
 import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
 
 const categories = [
   {

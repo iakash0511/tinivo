@@ -22,7 +22,7 @@ export function useCheckoutCTA() {
     const index = Math.floor(Math.random() * ctaOptions.length);
     if (total > 1000) return 'Seal the Joy 💌'
     return ctaOptions[index];
-  }, []);
+  }, [ctaOptions, total]);
 
   return selectedCTA;
 }

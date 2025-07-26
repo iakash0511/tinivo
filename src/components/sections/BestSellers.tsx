@@ -47,7 +47,7 @@ export default function Bestsellers() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
           {bestsellers.map((item) => (
-            <BestsellerCard item={item} id={item.id}/>
+            <BestsellerCard item={item} key={item.id} id={item.id}/>
           ))}
         </div>
       </div>

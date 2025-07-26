@@ -2,7 +2,6 @@
 
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { useCheckoutCTA } from '@/hooks/useCheckoutCta';
 import { useCartTotal } from '@/hooks/useCartTotal';
 

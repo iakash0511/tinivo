@@ -25,7 +25,7 @@ export default function BestsellerCard({ item, id}: { item: BestSellerItem, id: 
 
   return (
     <motion.div
-              key={item.id}
+              key={id}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.98 }}
               className="bg-white rounded-2xl shadow-md p-4 flex flex-col items-center text-center transition-all"

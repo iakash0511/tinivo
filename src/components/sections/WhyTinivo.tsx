@@ -43,7 +43,7 @@ export default function WhyTinivoSection() {
           💖 Why Our Customers Choose <span className='text-primary font-medium'>Tinivo</span>
         </h2>
         <p className="text-neutral-dark max-w-xl mx-auto font-body mb-12 text-base md:text-lg">
-          {`We're not just another cute store —  <span className='text-primary font-medium'>Tinivo</span> is where tiny surprises bring big smiles and even bigger emotions.`}
+          {`We're not just another cute store —  ${<span className='text-primary font-medium'>Tinivo</span>} is where tiny surprises bring big smiles and even bigger emotions.`}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

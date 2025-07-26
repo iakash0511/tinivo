@@ -1,7 +1,18 @@
+import Bestsellers from "@/components/sections/BestSellers";
+import Hero from "@/components/sections/Hero";
+// import WhatWeOffer from "@/components/sections/WhatWeOffer";
+import WhyTinivo from "@/components/sections/WhyTinivo";
+import Testimonals from '@/components/sections/Testimonals'
+import GiftingMoments from '@/components/sections/GiftingMoments'
 export default function Home() {
   return (
-    <main className="min-h-screen bg-lightBg text-neutralDark flex items-center justify-center">
-      <h1 className="text-4xl font-heading">Tinivo — Small Things. Big Joy.</h1>
-    </main>
+    <>
+      <Hero />
+      <WhyTinivo />
+      <Bestsellers />
+      <Testimonals />
+      <GiftingMoments />
+      {/* <WhatWeOffer /> */}
+    </>
   );
 }

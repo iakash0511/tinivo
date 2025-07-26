@@ -1,0 +1,63 @@
+@import "tailwindcss";
+/* includes preflight + utilities */
+
+/* Define design tokens */
+@theme {
+  --font-logo: 'Poppins', sans-serif;
+  --font-heading: 'Raleway', sans-serif;
+  --font-body: 'Nunito', sans-serif;
+  --font-cta: 'Quicksand', sans-serif;
+
+  --color-primary: oklch(78.31% 0.166 293.12);
+  --color-light-bg: oklch(97.49% 0.029 84.89);
+  --color-neutral-dark: oklch(29.24% 0.008 286.67);
+  --color-neutral-light: oklch(95.70% 0.005 104.29);
+  --color-accent1: oklch(85.68% 0.206 11.94);
+  --color-accent2: oklch(88.66% 0.180 248.25);
+}
+
+/* Dark mode */
+.dark {
+  --color-light-bg: oklch(0.2 0.02 270);
+  --color-neutral-dark: oklch(0.95 0.01 270);
+}
+
+/* Base styles */
+body {
+  font-family: var(--font-body);
+}
+
+/* Utility classes now available: font-logo, bg-primary, text-neutral-dark, etc. */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease-out both;
+}
+@keyframes pulse-slow {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+
+  50% {
+    transform: scale(1.3);
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
+}

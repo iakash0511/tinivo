@@ -3,6 +3,6 @@ export interface BestSellerItem {
   name: string;
   price: number;
   image: string;
-  tag: string;
+  tag?: string;
   description: string;
 }

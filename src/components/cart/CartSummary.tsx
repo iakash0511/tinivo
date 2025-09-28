@@ -10,7 +10,7 @@ export default function CartSummary() {
 
 
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm flex flex-col gap-4">
+    <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-lg flex flex-col gap-2">
       <div>
         <h3 className="font-heading text-lg text-neutral-dark">Order Summary</h3>
       </div>

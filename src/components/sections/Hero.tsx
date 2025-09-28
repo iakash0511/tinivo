@@ -7,7 +7,7 @@ import CTAButton from "../ui/CtaButton";
 
 export default function Hero() {
   return (
-    <section className="relative min-h-[80vh] flex flex-col md:flex-row items-center justify-between px-4 md:px-12 bg-light-bg overflow-hidden">
+    <section className="relative min-h-[80vh] flex flex-col md:flex-row items-center justify-between px-4 md:px-12 overflow-hidden">
       {/* Text Content */}
       <motion.div
         initial={{ opacity: 0, x: -40 }}
@@ -17,7 +17,7 @@ export default function Hero() {
       >
         <h1 className="text-4xl md:text-5xl font-heading text-neutral-dark leading-tight mb-6">
           Small Things. <br />
-          <span className="text-primary hover:text-accent1">Big Joy.</span>
+          <span className="bg-clip-text bg-gradient-to-r from-primary to-accent1/50 text-transparent">Big Joy.</span>
         </h1>
         <p className="text-lg font-body text-neutral-dark mb-8">
           Discover charming, Korean-style mini gifts that bring smiles every
@@ -36,15 +36,15 @@ export default function Hero() {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.9, delay: 0.2 }}
-        className="z-10"
+        className="relative w-full max-w-2xl aspect-[3/2] z-10"
       >
         <Image
           src="/assets/hero/hero.jpg"
           alt="Tinivo Korean-style gift in hand"
-          width={500}
-          height={500}
+          fill
           className="rounded-3xl shadow-xl"
           priority
+          sizes="(max-width: 768px) 100vw, 50vw" 
         />
       </motion.div>
     </section>

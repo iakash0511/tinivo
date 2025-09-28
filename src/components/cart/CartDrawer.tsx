@@ -7,7 +7,7 @@ import { SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/store/cart/cart-store';
 
-export function CartDrawer() {
+export default function CartDrawer() {
   const items = useCart((state) => state.items);
 
   const isEmpty = items.length === 0;
@@ -19,10 +19,8 @@ export function CartDrawer() {
         <SheetTitle className="font-logo text-lg">Your Cart</SheetTitle>
       </SheetHeader>
 
-      <Separator className="my-4 shrink-0" />
-
       {/* Cart Content */}
-      <div className="flex-1 overflow-y-auto px-4">
+      <div className="flex-1 px-4 overflow-y-auto">
         {isEmpty ? (
           <div className="flex items-center justify-center h-full text-neutral-500 text-sm">
             Your cart is empty 😔

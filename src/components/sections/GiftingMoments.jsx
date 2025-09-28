@@ -38,7 +38,7 @@ export default function GiftingMoments() {
           viewport={{ once: true }}
           className="font-heading text-3xl md:text-4xl"
         >
-          Moments Made Sweeter with <span className="text-primary">Tinivo</span>
+          Moments Made Sweeter with <span className="bg-clip-text bg-gradient-to-r from-primary to-accent1/50 text-transparent">Tinivo</span>
         </motion.h2>
 
         <motion.div
@@ -88,7 +88,7 @@ export default function GiftingMoments() {
               placeholder="e.g. Morning motivation for my bestie"
               className="w-full rounded-xl px-4 py-2 text-sm bg-white shadow-inner border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary"
             />
-            <Button variant="default" onClick={handleSubmit} className="font-cta">
+            <Button variant="default" onClick={handleSubmit} className="font-cta text-white">
               Add Your Moment
             </Button>
           </div>

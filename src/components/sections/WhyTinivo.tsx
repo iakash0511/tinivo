@@ -25,7 +25,7 @@ const reasons = [
   {
     emoji: '🎁',
     title: 'Wrapped With Love',
-    description: <span>Unboxing <span className='group-hover:text-accent1 text-primary underline font-bold'>Tinivo</span> feels like opening a warm hug — whether it’s a gift for someone you love or a little treat for yourself.</span>,
+    description: <span>Unboxing <span className='group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-primary group-hover:to-accent1/50 group-hover:text-transparent text-primary underline font-bold'>Tinivo</span> feels like opening a warm hug — whether it’s a gift for someone you love or a little treat for yourself.</span>,
   },
   {
     emoji: '🌟',
@@ -40,10 +40,10 @@ export default function WhyTinivoSection() {
 
       <div className="max-w-6xl mx-auto text-center relative z-10">
         <h2 className="text-3xl md:text-4xl font-heading text-neutral-dark mb-8">
-          💖 Why Our Customers Choose <span className='text-primary font-medium'>Tinivo</span>
+          💖 Why Our Customers Choose <span className='bg-clip-text bg-gradient-to-r from-primary to-accent1/50 text-transparent font-medium'>Tinivo</span>
         </h2>
         <p className="text-neutral-dark max-w-xl mx-auto font-body mb-12 text-base md:text-lg">
-          {`We're not just another cute store —  ${<span className='text-primary font-medium'>Tinivo</span>} is where tiny surprises bring big smiles and even bigger emotions.`}
+          We're not just another cute store —  <span className='bg-clip-text bg-gradient-to-r from-primary to-accent1/50 text-transparent font-medium'>Tinivo</span> is where tiny surprises bring big smiles and even bigger emotions.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

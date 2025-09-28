@@ -61,3 +61,6 @@ body {
 .animate-pulse-slow {
   animation: pulse-slow 4s ease-in-out infinite;
 }
+.animate-bounce {
+  animation: bounce 1.5s infinite;
+}

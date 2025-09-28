@@ -1,9 +1,11 @@
-import Bestsellers from "@/components/sections/BestSellers";
+'use client';
+import dynamic from "next/dynamic";
 import Hero from "@/components/sections/Hero";
-// import WhatWeOffer from "@/components/sections/WhatWeOffer";
-import WhyTinivo from "@/components/sections/WhyTinivo";
-import Testimonals from '@/components/sections/Testimonals'
-import GiftingMoments from '@/components/sections/GiftingMoments'
+const Bestsellers = dynamic(() => import('@/components/sections/BestSellers'), { ssr: false });
+const Testimonals = dynamic(() => import('@/components/sections/Testimonals'), { ssr: false });
+const WhyTinivo = dynamic(() => import('@/components/sections/WhyTinivo'), { ssr: false });
+const GiftingMoments = dynamic(() => import('@/components/sections/GiftingMoments'), { ssr: false });
+// const WhatWeOffer = dynamic(() => import('@/components/sections/WhatWeOffer'), { ssr: false });
 export default function Home() {
   return (
     <>

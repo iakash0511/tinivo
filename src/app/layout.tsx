@@ -4,6 +4,8 @@ import { Poppins, Raleway, Nunito, Quicksand } from "next/font/google";
 import Header from "@/components/layout/Header";
 import { Toaster } from 'react-hot-toast'
 import Footer from "@/components/layout/Footer";
+import BannerComponent from "@/components/layout/BannerComponent";
+import { OrderToasts } from "@/components/OrderToast";
 
 const poppins = Poppins({ subsets: ["latin"], weight: "700", variable: "--font-logo" });
 const raleway = Raleway({ subsets: ["latin"], variable: "--font-heading" });
@@ -27,8 +29,10 @@ export default function RootLayout({
       </head>
       <body className="font-body bg-white bg-gradient-to-br from-white to-white/80 text-neutral-dark">
         <Header />
-        <main className="min-h-[70vh]">{children}</main>
-         <Toaster position="top-right" reverseOrder={false} />
+        <BannerComponent />
+        <main className="min-h-[70vh] bg-light-bg">{children}</main>
+         <Toaster reverseOrder={false} />
+         <OrderToasts />
         <Footer />
       </body>
     </html>

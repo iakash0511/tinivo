@@ -16,7 +16,7 @@ export default function Header() {
   useEffect(() => {
     ref.current?.classList.add('animate-bounce')
     if (totalItems > 0) ref.current?.classList.add('text-primary')
-    let timerId = setTimeout(() => {
+    const timerId = setTimeout(() => {
       ref.current?.classList.remove('animate-bounce')
       ref.current?.classList.remove('text-primary')
     }, 2000);

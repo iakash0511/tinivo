@@ -25,7 +25,7 @@ export function OrderToasts() {
     return () => {
       clearInterval(interval)
     }
-  }, [toast])
+  }, [])
 
   return null
 }

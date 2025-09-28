@@ -8,9 +8,12 @@ import { Button } from '@/components/ui/button'
 import AddToCartButton from '@/components/cart/AddToCartButton'
 import Testimonials from '@/components/sections/Testimonals'
 
-export default function ProductPage({ params }: { params: { slug: string } }) {
+
+export default function ProductPage( props: any) {
+  const { slug } = props.params as { slug: string }
+
   const [qty, setQty] = useState(1);
-  const product = getProductBySlug(params.slug)
+  const product = getProductBySlug(slug)
   if (!product) return notFound()
 
   return (

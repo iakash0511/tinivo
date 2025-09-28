@@ -4,8 +4,9 @@ import { useCartTotal } from './useCartTotal';
 
 export function useCheckoutCTA() {
   const {  total } = useCartTotal()
-    
-  const ctaOptions = [
+
+  const selectedCTA = useMemo(() => {
+    const ctaOptions = [
     'Wrap My Joy 🎁',
     'Make It Mine 💖',
     'I Want This Happiness ✨',
@@ -17,12 +18,10 @@ export function useCheckoutCTA() {
     'Bring It Home 🏡',
     'Claim My Cute Stuff',
   ];
-
-  const selectedCTA = useMemo(() => {
     const index = Math.floor(Math.random() * ctaOptions.length);
     if (total > 1000) return 'Seal the Joy 💌'
     return ctaOptions[index];
-  }, [ctaOptions, total]);
+  }, [total]);
 
   return selectedCTA;
 }

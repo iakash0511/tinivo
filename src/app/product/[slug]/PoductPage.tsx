@@ -7,8 +7,9 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import AddToCartButton from '@/components/cart/AddToCartButton'
-import Testimonials from '@/components/sections/Testimonals'
+import dynamic from 'next/dynamic';
 
+const Testimonials = dynamic(() => import('@/components/sections/Testimonals'), { ssr: false });
 
 export default function ProductPage() {
   const params = useParams<{ slug: string }>();
@@ -18,7 +19,7 @@ export default function ProductPage() {
   const {slug } = params
 
   const product = getProductBySlug(slug)
-  
+
   if (!product) return notFound()
 
   return (

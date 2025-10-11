@@ -30,6 +30,7 @@ export default function RootLayout({
         <link rel="icon" href="/assets/favicon.ico" sizes="any" />
       </head>
       <body className="font-body bg-white bg-gradient-to-br from-white to-white/80 text-neutral-dark">
+       <Analytics/>
         <Header />
         <BannerComponent />
         <main className="min-h-[70vh] bg-light-bg">{children}</main>

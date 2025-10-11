@@ -1,4 +1,4 @@
-import ProductPage from "./PoductPage";
+import ProductPage from "./ProductPage";
 
 export default function Product() {
   return <ProductPage />;

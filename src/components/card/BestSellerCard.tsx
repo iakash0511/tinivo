@@ -5,7 +5,8 @@ import { BestSellerItem } from "@/interface/BestSellerInterface";
 import AddToCartButton from "../cart/AddToCartButton";
 
 export default function BestsellerCard({ item, id }: { item: BestSellerItem; id: string }) {
-  const slug = `/product/${item?.id}`;
+  
+  const slug = `/product/${item.slug}`;
 
   return (
     <motion.div

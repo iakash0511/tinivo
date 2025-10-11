@@ -1,8 +1,9 @@
 export interface BestSellerItem {
-  id: string;
+  _id: string;
   name: string;
   price: number;
   image: string;
   tag?: string;
   description: string;
+  slug: string;
 }

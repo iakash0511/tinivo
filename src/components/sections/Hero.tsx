@@ -4,48 +4,54 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { Gift } from "lucide-react";
 import CTAButton from "../ui/CtaButton";
+import { useRouter } from "next/navigation";
+
 
 export default function Hero() {
+  
+const router = useRouter();
   return (
-    <section className="relative min-h-[80vh] flex flex-col md:flex-row items-center justify-between px-4 md:px-12 overflow-hidden">
+    <section className="relative min-h-[85vh] flex items-center justify-start overflow-hidden bg-transparent">
+      {/* Background Image */}
+      <Image
+        src="/assets/hero/hero-section.png"
+        alt="Tinivo pastel background"
+        fill
+        className="object-cover object-center md:object-center opacity-95"
+        priority
+      />
+
+      {/* Overlay tint for readability */}
+       <motion.div
+        animate={{ opacity: [0.4, 0.6, 0.4] }}
+        transition={{ duration: 3, repeat: Infinity }}
+        className="absolute right-10 bottom-10 w-80 h-80 bg-accent1/30 blur-[120px] rounded-full"
+      />
+
+      <div className="absolute inset-0 bg-gradient-to-r from-light-bg/90 via-light-bg/70 to-transparent pointer-events-none" />
+     
       {/* Text Content */}
       <motion.div
         initial={{ opacity: 0, x: -40 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.8 }}
-        className="max-w-xl z-10"
+        className="relative z-10 px-6 md:px-20 max-w-xl"
       >
         <h1 className="text-4xl md:text-5xl font-heading text-neutral-dark leading-tight mb-6">
           Small Things. <br />
-          <span className="bg-clip-text bg-gradient-to-r from-primary to-accent1/50 text-transparent">Big Joy.</span>
+          <span className="bg-clip-text bg-gradient-to-r from-primary to-accent1/60 text-transparent">
+            Big Joy.
+          </span>
         </h1>
-        <p className="text-lg font-body text-neutral-dark mb-8">
-          Discover charming, Korean-style mini gifts that bring smiles every
-          day. Thoughtfully curated, wrapped with love.
+
+        <p className="text-lg font-body text-neutral-dark/90 mb-8">
+          Discover charming, Korean-style mini gifts that bring smiles every day.
+          Thoughtfully curated, wrapped with love.
         </p>
-        <CTAButton Icon={<Gift className="mr-2 h-5 w-5" />}>
-          Explore Gifts
+
+        <CTAButton Icon={<Gift className="mr-2 h-5 w-5" />} handleClick={() => router.push('/shop')}>
+          Explore the Collection
         </CTAButton>
-      </motion.div>
-
-      {/* Hero Glow Background */}
-      <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-[400px] h-[400px] bg-accent1/30 blur-[100px] rounded-full z-0" />
-
-      {/* Hero Image */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.9, delay: 0.2 }}
-        className="relative w-full max-w-2xl aspect-[3/2] z-10"
-      >
-        <Image
-          src="/assets/hero/hero.jpg"
-          alt="Tinivo Korean-style gift in hand"
-          fill
-          className="rounded-3xl shadow-xl"
-          priority
-          sizes="(max-width: 768px) 100vw, 50vw" 
-        />
       </motion.div>
     </section>
   );

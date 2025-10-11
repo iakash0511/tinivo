@@ -8,11 +8,29 @@ import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/useIsMobile";
 import { useCart } from "@/store/cart/cart-store";
 import { useEffect, useRef } from "react";
+import { usePathname } from 'next/navigation';
+
+
 const CartDrawer = dynamic(() => import('@/components/cart/CartDrawer'), { ssr: false });
+
 export default function Header() {
+
+  //Current pathname
+  const pathname = usePathname();
+
+  // Get total items in cart from Zustand store
   const totalItems = useCart((state) => state.totalItems());
   const isMobile = useIsMobile();
   const ref = useRef<SVGSVGElement>(null);
+
+  //Links to sections
+  const sections = [
+    { name: 'Home', href: '/', show: true },
+    { name: "Shop", href: "/shop", show: true },
+    { name: "Bestsellers", href: "#bestsellers", show: pathname === '/'},
+    { name: "Contact", href: "/contact", show: true },
+  ];
+
   useEffect(() => {
     ref.current?.classList.add('animate-bounce')
     if (totalItems > 0) ref.current?.classList.add('text-primary')
@@ -24,6 +42,7 @@ export default function Header() {
       clearTimeout(timerId)
       }
   },[totalItems])
+
   return (
     <header className="w-full sticky top-0 z-50 px-4 py-3 flex justify-between items-center border-b border-neutral-light shadow-sm bg-light-bg/40 backdrop-blur">
       <Link href="/" className="text-xl font-logo text-primary">
@@ -31,16 +50,9 @@ export default function Header() {
       </Link>
 
       <nav className="flex items-center space-x-6 font-heading text-sm">
-        <Link href="#gifts" className="hover:text-primary">
-          Gifts
-        </Link>
-        <Link href="#bestsellers" className="hover:text-primary">
-          Bestsellers
-        </Link>
-        <Link href="#about" className="hover:text-primary">
-          About
-        </Link>
-
+        {sections.filter(show => show.show).map(section => (
+          <Link href={section.href} key={section.name} className={`hover:text-primary ${pathname === section.href && 'text-primary'}`}> {section.name} </Link>
+        ))}
         <Sheet>
           <SheetTrigger asChild>
             <button className="relative">

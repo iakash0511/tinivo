@@ -4,6 +4,8 @@ interface CartTotal {
     subtotal: number
     giftWrapTotal: number
     total: number
+    saved: number
+    shipping: number
 }
 
 export function useCartTotal(): CartTotal {
@@ -15,11 +17,15 @@ export function useCartTotal(): CartTotal {
         (sum, item) => sum + (item.giftWrap ? giftWrapFee : 0),
         0
     )
+    const shipping = 0 // Assuming free shipping for simplicity
+    const saved = items.reduce((sum, item) => sum + (item.giftWrap ? giftWrapFee : 0), 0)
     const total = subtotal + giftWrapTotal
 
     return {
         subtotal,
         giftWrapTotal,
         total,
+        saved,
+        shipping
     }
 }

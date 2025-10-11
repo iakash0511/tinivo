@@ -4,9 +4,12 @@ import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { useCheckoutCTA } from '@/hooks/useCheckoutCta';
 import { useCartTotal } from '@/hooks/useCartTotal';
+import { useRouter } from 'next/navigation';
 
 export default function CartSummary() {
   const { subtotal, giftWrapTotal, total } = useCartTotal()
+
+  const router = useRouter();
 
 
   return (
@@ -42,7 +45,7 @@ export default function CartSummary() {
         🚚 Orders placed before <strong>9PM</strong> will be shipped **today**.
       </p>
 
-      <Button className="w-full font-cta text-sm rounded-xl mt-4 hover:bg-accent1 text-white">
+      <Button className="w-full font-cta text-sm rounded-xl mt-4 hover:bg-accent1 text-white" onClick={() => router.push('/checkout')}>
         {useCheckoutCTA()}
       </Button>
     </div>

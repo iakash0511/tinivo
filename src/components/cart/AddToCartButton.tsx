@@ -9,7 +9,7 @@ export default function AddToCartButton({ item, quantity }: { item: BestSellerIt
   const [isAdded, setIsAdded] = useState(false);
   const addItem = useCart((state) => state.addItem);
   const updateQuantity = useCart((state) => state.updateItemQuantity);
-  const cartItem = useCart((state) => state.items.find((i) => i.id === item.id));
+  const cartItem = useCart((state) => state.items.find((i) => i._id === item._id));
   const currentQuantity = cartItem ? cartItem.quantity : 0;
     const handleAddItem = () => {
     if (!item) return;
@@ -18,11 +18,11 @@ export default function AddToCartButton({ item, quantity }: { item: BestSellerIt
     // Add item to cart
     if (currentQuantity > 0) {
       toast.success(`Increased quantity of ${item.name} in cart!`);
-      updateQuantity(item.id, currentQuantity + (quantity ? quantity : 1));
+      updateQuantity(item._id, currentQuantity + (quantity ? quantity : 1));
       return;
     }
     addItem({   
-        id: item.id,
+        _id: item._id,
         name: item.name,
         price: item.price,
         quantity: quantity ? quantity : 1,

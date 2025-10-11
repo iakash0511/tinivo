@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast'
 import Footer from "@/components/layout/Footer";
 import BannerComponent from "@/components/layout/BannerComponent";
 import { OrderToasts } from "@/components/OrderToast";
+import "@/lib/fontawesome"
 
 const poppins = Poppins({ subsets: ["latin"], weight: "700", variable: "--font-logo" });
 const raleway = Raleway({ subsets: ["latin"], variable: "--font-heading" });

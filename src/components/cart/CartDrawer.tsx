@@ -28,7 +28,7 @@ export default function CartDrawer() {
           <ScrollArea className="h-full pr-2">
             <div className="flex flex-col gap-4 ">
               {items.map((item) => (
-                <CartItemCard key={item.id} id={item.id} name={item.name} price={item.price} quantity={item.quantity} image={item.image} giftWrap={item.giftWrap}/>
+                <CartItemCard key={item._id} id={item._id} name={item.name} price={item.price} quantity={item.quantity} image={item.image} giftWrap={item.giftWrap}/>
               ))}
             </div>
           </ScrollArea>

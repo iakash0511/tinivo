@@ -2,7 +2,7 @@
 import { create } from "zustand";
 
 type CartItem = {
-  id: string;
+  _id: string;
   name: string;
   price: number;
   quantity: number;
@@ -27,12 +27,12 @@ export const useCart = create<CartStore>((set, get) => ({
   items: [],
   addItem: (item) =>
     set((state) => {
-      const exists = state.items.find((i) => i.id === item.id);
+      const exists = state.items.find((i) => i._id === item._id);
       if (exists) {
         return {
           ...state,
           items: state.items.map((i) =>
-            i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+            i._id === item._id ? { ...i, quantity: i.quantity + 1 } : i
           ),
         };
       } else {
@@ -41,29 +41,29 @@ export const useCart = create<CartStore>((set, get) => ({
     }),
   removeItem: (id) =>
     set((state) => ({
-      items: state.items.filter((i) => i.id !== id),
+      items: state.items.filter((i) => i._id !== id),
     })),
   updateItem: (id, updates) =>
     set((state) => ({
       items: state.items.map((item) =>
-        item.id === id ? { ...item, ...updates } : item
+        item._id === id ? { ...item, ...updates } : item
       ),
     })),
   clearCart: () => set({ items: [] }),
   updateItemQuantity: (id: string, quantity: number) =>
     set((state) => ({
       items: state.items.map((item) =>
-        item.id === id ? { ...item, quantity } : item
+        item._id === id ? { ...item, quantity } : item
       ),
     })),
   removeFromCart: (id: string) =>
     set((state) => ({
-      items: state.items.filter((item) => item.id !== id),
+      items: state.items.filter((item) => item._id !== id),
     })),
   toggleGiftWrap: (id: string) =>
     set((state) => ({
       items: state.items.map((item) =>
-        item.id === id ? { ...item, giftWrap: !item.giftWrap } : item
+        item._id === id ? { ...item, giftWrap: !item.giftWrap } : item
       ),
     })),
     totalItems: () => get().items.reduce((total, item) => total + item.quantity, 0)

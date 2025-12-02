@@ -1,7 +1,6 @@
-// hooks/useShipping.ts
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import debounce from "lodash.debounce";
 import { useCart } from "@/store/cart/cart-store";
 import {
@@ -16,17 +15,6 @@ type UseShippingResult = {
   refresh: () => void;
   selected: ShippingOption | null;
 };
-
-const RATE_KEYS = [
-  "rate",
-  "freight",
-  "shipping_charge",
-  "charges",
-  "cost",
-  "delivery_charge",
-  "amount",
-  "price",
-];
 
 function toNumber(v: any) {
   if (v == null) return 0;
@@ -75,7 +63,19 @@ export function useShipping(
     return w && w > 0 ? Number(w.toFixed(2)) : 0.5;
   }, [cartItems]);
 
-  // debounced fetch to avoid spamming when user types
+  // keep latest params in a ref so the stable debounced fn can read them
+  const latestParamsRef = useRef({
+    weight,
+    paymentMethod,
+    subtotal,
+  });
+
+  // update the ref whenever those values change
+  useEffect(() => {
+    latestParamsRef.current = { weight, paymentMethod, subtotal };
+  }, [weight, paymentMethod, subtotal]);
+
+  // stable fetch function that reads current params from the ref
   const fetchOptions = async (pc: string) => {
     if (!pc || !/^[1-9][0-9]{5}$/.test(pc)) {
       setOptions([]);
@@ -83,27 +83,34 @@ export function useShipping(
       setIsLoading(false);
       return;
     }
+
     setIsLoading(true);
     setError(null);
 
     try {
-      const cod = paymentMethod === "cod" ? "1" : "0";
-      const declared_value = Math.round(subtotal || 0);
+      const { paymentMethod: pm, subtotal: declared_value, weight: w } =
+        latestParamsRef.current;
+      const cod = pm === "cod" ? "1" : "0";
+      const declared = Math.round(declared_value || 0);
+
       const res = await fetch(
-        `/api/shippingrates?delivery_postcode=${encodeURIComponent(pc)}&weight=${encodeURIComponent(String(weight))}&cod=${cod}&declared_value=${declared_value}`,
+        `/api/shippingrates?delivery_postcode=${encodeURIComponent(
+          pc
+        )}&weight=${encodeURIComponent(String(w))}&cod=${cod}&declared_value=${declared}`,
         { method: "GET", headers: { "Content-Type": "application/json" } }
       );
+
       if (!res.ok) {
         const txt = await res.json().catch(() => null);
         throw new Error(
           txt?.error || txt?.message || `Shiprocket returned ${res.status}`
         );
       }
+
       const json = await res.json();
       const normalized = normalize(json);
       setOptions(normalized);
 
-      // auto-select cheapest if none selected or if cheapest changed
       if (normalized.length > 0) {
         const fastest = normalized
           .filter((o) => typeof o.raw?.etd_hours === "number")
@@ -113,7 +120,6 @@ export function useShipping(
           setShippingOption(fastest);
         }
       } else {
-        // clear selected if no options
         setShippingOption(null);
       }
     } catch (err: any) {
@@ -124,28 +130,30 @@ export function useShipping(
     }
   };
 
-  // debounce wrapper
+  // create a *stable* debounced function — only recreate when forceRefreshKey changes
+  // this prevents recreation on every weight/subtotal/paymentMethod change
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const debounced = useMemo(
     () => debounce((pc: string) => fetchOptions(pc), 600),
-    [weight, paymentMethod, subtotal, opts?.forceRefreshKey]
+    [opts?.forceRefreshKey]
   );
 
   useEffect(() => {
-    // run only when pincode valid
     if (!pincode || !/^[1-9][0-9]{5}$/.test(pincode)) {
       setOptions([]);
       setError(null);
       return;
     }
+
+    // call the stable debounced function
     debounced(pincode);
 
     return () => {
       debounced.cancel();
     };
-  }, [pincode, debounced, opts?.forceRefreshKey]);
+  }, [pincode, debounced]);
 
-  // public refresh to re-run fetch immediately
+  // public refresh to run immediate fetch using latest params
   const refresh = () => {
     if (pincode && /^[1-9][0-9]{5}$/.test(pincode)) {
       fetchOptions(pincode);

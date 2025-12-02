@@ -18,6 +18,7 @@ import { useCart } from "@/store/cart/cart-store";
 import { useCheckoutStore } from "@/store/checkout/checkout-store";
 import { useCartTotal } from "@/hooks/useCartTotal";
 import { useShipping } from "@/hooks/useShipping";
+import { Textarea } from "../ui/textarea";
 
 type Step = "shipping" | "payment";
 
@@ -34,7 +35,7 @@ export function CheckoutForm() {
     useCheckoutStore();
   const pincode = checkoutInfo?.pincode;
 
-  const { error, options, refresh, selected, isLoading } = useShipping(pincode);
+  const { isLoading } = useShipping(pincode);
 
   useEffect(() => {
     if (!items || items.length === 0) {
@@ -243,7 +244,9 @@ export function CheckoutForm() {
   };
 
   // Input change handler using placeholder keys (keeps your existing store pattern)
-  const handleChangeInfo = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeInfo = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { placeholder, value } = e.target;
     const updatedInfo = checkoutInfo
       ? { ...checkoutInfo }
@@ -312,8 +315,7 @@ export function CheckoutForm() {
             className="bg-white rounded-2xl shadow-sm p-6"
           >
             <h2 className="text-xl font-heading mb-4">Shipping Details</h2>
-
-            <div className="space-y-3 w-full">
+            <div className="space-y-6 w-full">
               <label className="block">
                 <Input
                   placeholder="Full Name"
@@ -374,7 +376,7 @@ export function CheckoutForm() {
               </label>
 
               <label className="block">
-                <Input
+                <Textarea
                   placeholder="Street Address"
                   required
                   value={checkoutInfo?.address || ""}

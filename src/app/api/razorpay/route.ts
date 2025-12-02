@@ -36,8 +36,12 @@ export async function POST(req: Request) {
 
     const order = await razorpay.orders.create(options);
     return NextResponse.json(order);
-  } catch (error: any) {
-    console.error("Razorpay Error:", error?.statusCode ?? "", error?.error ?? error);
-    return NextResponse.json({ error: "Failed to create order", details: String(error?.message ?? error) }, { status: 500 });
+  } catch (error: unknown) {
+    const errObj = (typeof error === 'object' && error !== null) ? error as Record<string, unknown> : undefined;
+    const statusCode = errObj && typeof errObj['statusCode'] === 'number' ? errObj['statusCode'] : undefined;
+    const details = (errObj && ('error' in errObj ? errObj['error'] : undefined)) ?? error;
+    console.error("Razorpay Error:", statusCode ?? "", details ?? error);
+    const message = errObj && typeof errObj['message'] === 'string' ? errObj['message'] : String(error);
+    return NextResponse.json({ error: "Failed to create order", details: message }, { status: 500 });
   }
 }

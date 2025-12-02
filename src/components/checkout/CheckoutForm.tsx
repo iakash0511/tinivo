@@ -166,7 +166,7 @@ export function CheckoutForm() {
       }
 
       // For Razorpay: create order on server using finalPayable (convert to paise)
-      const amountInPaise = Math.round(finalPayable); // Razorpay expects paise
+      const amountInPaise = Math.round(finalPayable * 100); // Razorpay expects paise
       const createRes = await fetch("/api/razorpay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

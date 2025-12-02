@@ -17,4 +17,5 @@ export interface Product {
   description: string;
   quantity: number;
   giftWrap: boolean;
+  compareAtPrice?: number;
 }

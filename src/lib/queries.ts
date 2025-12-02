@@ -8,15 +8,19 @@ export const productBySlugQuery = `
     "images": images[].asset->url,
     shipping,
     care,
-    isBestseller
+    isBestseller,
+    compareAtPrice,
+    quantity,
   }
 `
 export const getBestSellers = `
-    *[_type == "product" && isBestseller == true] | order(_createdAt desc) {
+    *[_type == "product"] | order(_createdAt desc) {
     _id,
     name,
     price,
     "slug": slug.current,
+    compareAtPrice,
+    quantity,
     "image": images[0].asset->url,
     description,
   }
@@ -28,6 +32,8 @@ export const getAllProducts = `
     name,
     price,
     "slug": slug.current,
+    compareAtPrice,
+    quantity,
     "image": images[0].asset->url,
     category,
     isBestseller

@@ -6,10 +6,15 @@ import { Button } from "@/components/ui/button"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faCheckCircle } from "@fortawesome/free-solid-svg-icons"
 import confetti from "canvas-confetti"
+import { useCheckoutStore } from "@/store/checkout/checkout-store"
+import { useParams } from "next/navigation"
 
 export default function OrderConfirmation() {
   // Simulate user's name (later we can pull it from checkout data or Zustand store)
-  const userName = "Akash" // Example fallback name
+  const { checkoutInfo, setCheckoutInfo } = useCheckoutStore()
+  const params = useParams()
+  const slug = params.slug as string
+  const userName = checkoutInfo?.fullName || "Customer"
 
   useEffect(() => {
     // Confetti celebration burst
@@ -36,10 +41,10 @@ export default function OrderConfirmation() {
     frame()
   }, [])
 
-  const orderId = `TNV${Math.floor(Math.random() * 90000 + 10000)}`
+  const orderId = slug
 
   return (
-    <main className="min-h-screen flex flex-col justify-center items-center bg-light-bg px-6 py-12 text-center">
+    <main className="min-h-screen flex flex-col justify-center items-center px-6 py-12 text-center">
       <div className="bg-white rounded-3xl shadow-md p-8 max-w-md w-full space-y-6">
         <FontAwesomeIcon
           icon={faCheckCircle}

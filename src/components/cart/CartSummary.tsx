@@ -7,7 +7,7 @@ import { useCartTotal } from '@/hooks/useCartTotal';
 import { useRouter } from 'next/navigation';
 
 export default function CartSummary() {
-  const { subtotal, giftWrapTotal, total } = useCartTotal()
+  const { subtotal, giftWrapTotal, total, shipping, compareTotal } = useCartTotal()
 
   const router = useRouter();
 
@@ -20,9 +20,12 @@ export default function CartSummary() {
 
       <div className="flex justify-between text-sm text-neutral-700">
         <span>Subtotal</span>
-        <span>₹{subtotal?.toFixed(2)}</span>
+        <span className='flex gap-2'><span className='line-through'>₹{compareTotal}</span>₹{subtotal?.toFixed(2)}</span>
       </div>
-
+      <div className="flex justify-between text-sm text-neutral-700">
+        <span>Shipping</span>
+        <span className={`${shipping > 0 ? 'text-black' : 'text-green-600'}`}>₹{shipping > 0 ? shipping : 'Free'}</span>
+      </div>
       {giftWrapTotal > 0 && (
         <div className="flex justify-between text-sm text-neutral-700">
           <span>Gift Wrap</span>

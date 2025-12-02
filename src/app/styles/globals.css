@@ -9,11 +9,15 @@
   --font-cta: 'Quicksand', sans-serif;
 
   --color-primary: oklch(78.31% 0.166 293.12);
-  --color-light-bg: oklch(97.49% 0.029 84.89);
+  --color-light-bg: oklch(0.9749 0.0094 17.58);
   --color-neutral-dark: oklch(29.24% 0.008 286.67);
-  --color-neutral-light: oklch(95.70% 0.005 104.29);
+  --color-neutral-light: oklch(98.5% 0.002 247.839);
   --color-accent1: oklch(85.68% 0.206 11.94);
   --color-accent2: oklch(88.66% 0.180 248.25);
+  --color-softLavendar: oklch(94.6% 0.032 293.12);
+  --color-softPink: oklch(94.8% 0.028 342);
+  --color-babyBlue: oklch(95.1% 0.026 236.824);
+  --color-subtle: oklch(96% 0.015 293.12)
 }
 
 /* Dark mode */

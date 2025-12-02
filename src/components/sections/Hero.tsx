@@ -11,7 +11,7 @@ export default function Hero() {
   
 const router = useRouter();
   return (
-    <section className="relative min-h-[85vh] flex items-center justify-start overflow-hidden bg-transparent">
+    <section className="relative min-h-[85vh] flex items-center justify-start overflow-hidden bg-softLavendar">
       {/* Background Image */}
       <Image
         src="/assets/hero/hero-section.png"
@@ -39,7 +39,7 @@ const router = useRouter();
       >
         <h1 className="text-4xl md:text-5xl font-heading text-neutral-dark leading-tight mb-6">
           Small Things. <br />
-          <span className="bg-clip-text bg-gradient-to-r from-primary to-accent1/60 text-transparent">
+          <span className="text-primary leading-tight">
             Big Joy.
           </span>
         </h1>

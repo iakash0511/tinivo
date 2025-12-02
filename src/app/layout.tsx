@@ -33,7 +33,7 @@ export default function RootLayout({
        <Analytics/>
         <Header />
         <BannerComponent />
-        <main className="min-h-[70vh] bg-light-bg">{children}</main>
+        <main className="min-h-[70vh] bg-softPink">{children}</main>
          <Toaster reverseOrder={false} />
          <OrderToasts />
         <Footer />

@@ -36,14 +36,14 @@ const reasons = [
 
 export default function WhyTinivoSection() {
   return (
-    <section className="relative bg-light-bg py-16 px-4 sm:px-8 md:px-16 overflow-hidden">
+    <section className="relative bg-babyBlue py-16 px-4 sm:px-8 md:px-16 overflow-hidden">
 
       <div className="max-w-6xl mx-auto text-center relative z-10">
         <h2 className="text-3xl md:text-4xl font-heading text-neutral-dark mb-8">
-          💖 Why Our Customers Choose <span className='bg-clip-text bg-gradient-to-r from-primary to-accent1/50 text-transparent font-medium'>Tinivo</span>
+          💖 Why Our Customers Choose <span className='text-primary font-medium'>Tinivo</span>
         </h2>
         <p className="text-neutral-dark max-w-xl mx-auto font-body mb-12 text-base md:text-lg">
-         {`We're`} not just another cute store —  <span className='bg-clip-text bg-gradient-to-r from-primary to-accent1/50 text-transparent font-medium'>Tinivo</span> is where tiny surprises bring big smiles and even bigger emotions.
+         {`We're`} not just another cute store —  <span className='text-primary font-medium'>Tinivo</span> is where tiny surprises bring big smiles and even bigger emotions.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -77,8 +77,8 @@ export default function WhyTinivoSection() {
           className="mt-10"
         >
           <a
-            href="#shop"
-            className="inline-block group font-cta text-white bg-primary px-6 py-3 rounded-full text-sm md:text-base transition duration-300 shadow-md hover:shadow-[0_0_20px_var(--color-accent1) hover:bg-accent1"
+            href="/shop"
+            className="inline-block group font-cta text-white bg-primary px-6 py-3 rounded-full text-sm md:text-base transition duration-300 shadow-md hover:shadow-[0_0_20px_var(--color-accent1)] hover:bg-accent1"
           >
             👉 Explore the <span className='font-extrabold'>Tinivo</span> Way →
           </a>

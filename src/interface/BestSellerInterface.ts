@@ -6,4 +6,6 @@ export interface BestSellerItem {
   tag?: string;
   description: string;
   slug: string;
+  compareAtPrice?: number;
+  quantity?: number;
 }

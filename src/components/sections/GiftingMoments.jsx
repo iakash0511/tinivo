@@ -22,7 +22,7 @@ export default function GiftingMoments() {
   };
 
   return (
-    <section className="relative bg-light-bg py-20 px-4 text-neutral-dark overflow-hidden">
+    <section className="relative bg-softPink py-20 px-4 text-neutral-dark overflow-hidden">
       {/* Background sparkles */}
       <div className="absolute inset-0 pointer-events-none z-0">
         <div className="animate-pulse-slow absolute top-10 left-10 w-2 h-2 bg-accent1 rounded-full opacity-50" />
@@ -38,7 +38,7 @@ export default function GiftingMoments() {
           viewport={{ once: true }}
           className="font-heading text-3xl md:text-4xl"
         >
-          Moments Made Sweeter with <span className="bg-clip-text bg-gradient-to-r from-primary to-accent1/50 text-transparent">Tinivo</span>
+          Moments Made Sweeter with <span className="text-primary">Tinivo</span>
         </motion.h2>
 
         <motion.div

@@ -5,7 +5,7 @@ import { useCart } from '@/store/cart/cart-store';
 import { useState } from "react";
 import toast from "react-hot-toast";
 
-export default function AddToCartButton({ item, quantity }: { item: BestSellerItem, quantity?: number }) {
+export default function AddToCartButton({ item, quantity, isDisabled }: { item: BestSellerItem, quantity?: number, isDisabled?: boolean }) {
   const [isAdded, setIsAdded] = useState(false);
   const addItem = useCart((state) => state.addItem);
   const updateQuantity = useCart((state) => state.updateItemQuantity);
@@ -27,6 +27,7 @@ export default function AddToCartButton({ item, quantity }: { item: BestSellerIt
         price: item.price,
         quantity: quantity ? quantity : 1,
         giftWrap: false,
+        compareAtPrice: item.compareAtPrice,
     });
     toast.success(`${item.name} added to cart!`, {position: "bottom-right"});
   }
@@ -35,6 +36,7 @@ export default function AddToCartButton({ item, quantity }: { item: BestSellerIt
       className="bg-primary text-white px-4 py-2 rounded-full font-cta text-sm hover:bg-accent1 transition"
       onClick={handleAddItem}
         aria-label={`Add ${item.name} to cart`}
+        disabled={isDisabled}
     >
       {isAdded ? "✅ Added!" : "Add to Bag"}
     </button>

@@ -9,6 +9,7 @@ type CartItem = {
   quantityLeft?: number;
   giftWrap?: boolean;
   image?: string; 
+  compareAtPrice?: number;
 };
 
 type CartStore = {

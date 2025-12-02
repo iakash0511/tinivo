@@ -3,7 +3,8 @@ import { NextResponse } from 'next/server'
 import { client } from '@/lib/sanity.client'
 import { productBySlugQuery } from '@/lib/queries'
 
-export async function GET(request: Request, { params }: { params: { slug: string } }) {
+export async function GET(request: Request, ctx: { params: Promise<{ slug: string }> }) {
+  const params = await ctx.params
   const { slug } = params
 
   try {

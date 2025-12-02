@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import type { Order } from '@/interface/OrderInterface'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { client } from "@/lib/sanity.client"
@@ -8,9 +9,9 @@ import { motion } from "framer-motion"
 
 export default function OrderTrackingPage() {
   const [orderId, setOrderId] = useState("")
-  const [order, setOrder] = useState<any>(null)
+  const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [error, setError] = useState<string>("")
 
   const handleTrack = async () => {
     if (!orderId.trim()) return

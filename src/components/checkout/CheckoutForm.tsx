@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -16,6 +16,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useCart } from "@/store/cart/cart-store";
 import { useCheckoutStore } from "@/store/checkout/checkout-store";
+import type { CheckoutInfo } from '@/store/checkout/checkout-store';
 import { useCartTotal } from "@/hooks/useCartTotal";
 import { useShipping } from "@/hooks/useShipping";
 import { Textarea } from "../ui/textarea";
@@ -61,7 +62,8 @@ export function CheckoutForm() {
   ] as const;
 
   // --- Validation rules ---
-  const validators = {
+  type ShippingField = keyof CheckoutInfo;
+  const validators: Record<ShippingField, (v: string) => boolean> = {
     fullName: (v: string) => v.trim().length >= 2,
     phoneNumber: (v: string) => /^\d{10}$/.test(v.trim()),
     email: (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()),
@@ -72,12 +74,12 @@ export function CheckoutForm() {
 
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const getFieldError = (field: keyof typeof validators) => {
-    const value = (checkoutInfo && (checkoutInfo as any)[field]) || "";
+  const getFieldError = (field: ShippingField) => {
+    const value = (checkoutInfo ? (checkoutInfo as CheckoutInfo)[field] : "") || "";
     if (!touched[field]) return "";
     const ok = validators[field](value);
     if (ok) return "";
-    const messages: Record<string, string> = {
+    const messages: Record<ShippingField, string> = {
       fullName: "Please enter your full name",
       phoneNumber: "Enter a 10-digit phone number",
       email: "Enter a valid email address",
@@ -88,9 +90,9 @@ export function CheckoutForm() {
     return messages[field];
   };
 
-  const isShippingValid = Object.keys(validators).every((k) => {
-    const fn = (validators as any)[k];
-    const val = checkoutInfo ? (checkoutInfo as any)[k] : "";
+  const isShippingValid = (Object.keys(validators) as ShippingField[]).every((k) => {
+    const fn = validators[k];
+    const val = checkoutInfo ? (checkoutInfo as CheckoutInfo)[k] : "";
     return fn(val || "");
   });
 
@@ -101,6 +103,12 @@ export function CheckoutForm() {
   };
 
   // --- Place order handler ---
+  type RazorpayResponse = {
+    razorpay_order_id?: string;
+    razorpay_payment_id?: string;
+    razorpay_signature?: string;
+  };
+
   const handlePlaceOrder = async () => {
     setErrorMessage(null);
     setSuccessMsg(null);
@@ -175,7 +183,7 @@ export function CheckoutForm() {
         description: "Small Things. Big Joy.",
         order_id: createData.id,
         image: "/assets/logo.png",
-        handler: async function (response: any) {
+        handler: async function (response: RazorpayResponse) {
           // Save successful payment on server with finalPayable
           try {
             const saveRes = await fetch("/api/save-order", {
@@ -209,7 +217,7 @@ export function CheckoutForm() {
             router.push(
               `/order-confirmation/${saveData.order?.id ?? saveData.order?.orderId ?? ""}`
             );
-          } catch (saveErr) {
+          } catch (saveErr: unknown) {
             console.error(saveErr);
             setErrorMessage(
               "Payment succeeded but we failed to save your order. Please contact support."
@@ -227,16 +235,22 @@ export function CheckoutForm() {
         theme: { color: "#9D7EDB" },
       };
 
-      // open Razorpay checkout
-      // @ts-ignore window typing
-      const R = (window as any).Razorpay;
-      if (!R) throw new Error("Razorpay SDK not loaded");
-      const rzp = new (window as any).Razorpay(options);
+      // open Razorpay checkout - avoid using `any` by typing the global
+      type RazorpayOptions = typeof options;
+      type RazorpayInstance = { open: () => void };
+      type RazorpayConstructor = new (opts: RazorpayOptions) => RazorpayInstance;
+
+      const RazorpayCtor = (window as unknown as { Razorpay?: RazorpayConstructor }).Razorpay;
+      if (!RazorpayCtor) throw new Error("Razorpay SDK not loaded");
+      const rzp = new RazorpayCtor(options);
       rzp.open();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("place order error", err);
+      const message = err && typeof err === 'object' && 'message' in err && typeof (err as { message?: unknown }).message === 'string'
+        ? (err as { message?: string }).message
+        : null;
       setErrorMessage(
-        err?.message || "Something went wrong, please try again."
+        message || "Something went wrong, please try again."
       );
     } finally {
       setLoading(false);
@@ -248,7 +262,7 @@ export function CheckoutForm() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { placeholder, value } = e.target;
-    const updatedInfo = checkoutInfo
+    const updatedInfo: CheckoutInfo = checkoutInfo
       ? { ...checkoutInfo }
       : {
           fullName: "",

@@ -43,7 +43,7 @@ export async function POST(req: Request) {
       billing_country: "India",
       billing_email: order.email,
       billing_phone: order.phone,
-      order_items: order.items.map((item: any) => ({
+      order_items: order.items.map((item: {name: string, quantity: number, price: number}) => ({
         name: item.name,
         sku: item.name.toLowerCase().replace(/\s+/g, "-"),
         units: item.quantity,

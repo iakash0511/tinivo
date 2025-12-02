@@ -27,7 +27,7 @@ export async function POST(req: Request) {
       city: checkoutInfo.city,
       pincode: checkoutInfo.pincode,
       total: totalAmount,
-      items: cartItems.map((item: any) => ({
+      items: cartItems.map((item: {name: string, quantity: number, price: number}) => ({
         name: item.name,
         quantity: item.quantity,
         price: item.price,
@@ -35,13 +35,6 @@ export async function POST(req: Request) {
     })
     console.log("🌀 Triggering Shiprocket for order:", newOrder.orderId);
     // 🔁 Send this order to Shiprocket
-    const baseUrl =
-      process.env.NEXT_PUBLIC_BASE_URL
-        ? process.env.NEXT_PUBLIC_BASE_URL
-        : process.env.VERCEL_URLs
-        ? `https://${process.env.VERCEL_URL}`
-        : "http://localhost:3000";
-
     return NextResponse.json({ success: true, order: newOrder })
   } catch (error) {
     console.error("Save Order Error:", error)

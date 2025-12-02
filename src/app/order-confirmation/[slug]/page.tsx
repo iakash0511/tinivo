@@ -11,7 +11,7 @@ import { useParams } from "next/navigation"
 
 export default function OrderConfirmation() {
   // Simulate user's name (later we can pull it from checkout data or Zustand store)
-  const { checkoutInfo, setCheckoutInfo } = useCheckoutStore()
+  const { checkoutInfo } = useCheckoutStore()
   const params = useParams()
   const slug = params.slug as string
   const userName = checkoutInfo?.fullName || "Customer"

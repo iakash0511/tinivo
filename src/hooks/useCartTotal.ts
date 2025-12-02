@@ -27,7 +27,7 @@ export function useCartTotal(): CartTotal {
     0
   );
 
-  let subtotal = items.reduce(
+  const subtotal = items.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );

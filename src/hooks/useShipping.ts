@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import debounce from "lodash.debounce";
 import { useCart } from "@/store/cart/cart-store";
+import type { CartItem } from '@/store/cart/cart-store'
 import {
   useCheckoutStore,
   ShippingOption,
@@ -16,37 +17,48 @@ type UseShippingResult = {
   selected: ShippingOption | null;
 };
 
-function toNumber(v: any) {
-  if (v == null) return 0;
-  if (typeof v === "number") return v;
-  const cleaned = String(v).replace(/[^\d.]/g, "");
-  return cleaned ? Number(cleaned) : 0;
-}
 
-const normalize = (raw: any): ShippingOption[] => {
-  if (!raw?.options?.data?.available_courier_companies) return [];
+const normalize = (raw: unknown): ShippingOption[] => {
+  const r = raw as Record<string, unknown> | null;
+  const available = r?.['options'] as unknown;
+  if (!available) return [];
 
-  const arr = raw.options.data.available_courier_companies;
+  // drill into expected shape safely
+  const optionsObj = r && 'options' in r ? (r['options'] as unknown) : undefined;
+  const data = optionsObj && typeof optionsObj === 'object' && optionsObj !== null
+    ? ((optionsObj as Record<string, unknown>)['data'] as Record<string, unknown> | undefined)
+    : undefined;
+  const arr = data && 'available_courier_companies' in data && Array.isArray(data['available_courier_companies'])
+    ? (data['available_courier_companies'] as unknown[])
+    : undefined;
+  if (!arr || !Array.isArray(arr)) return [];
 
-  return arr.map((o: any) => {
+  return arr.map((o) => {
+    const opt = o as Record<string, unknown>;
+    const courier_name = typeof opt.courier_name === 'string' ? opt.courier_name : String(opt.courier_name ?? '');
+    const courier_type = String(opt.courier_type ?? '');
+    const ed = opt.estimated_delivery_days ?? opt.etd_hours;
+    const estimated_days = typeof ed === 'number' || typeof ed === 'string' ? (ed as string | number) : undefined;
+    const rate = Number((opt.rate ?? opt.freight_charge) ?? 0);
+
     return {
-      courier_name: o.courier_name,
-      service_type: o.courier_type === "0" ? "Air" : "Surface",
-      estimated_days: o.estimated_delivery_days || o.etd_hours || null,
-      rate: Number(o.rate || o.freight_charge || 0),
-      raw: o,
+      courier_name,
+      service_type: courier_type === "0" ? "Air" : "Surface",
+      estimated_days,
+      rate,
+      raw: opt,
     } as ShippingOption;
   });
 };
 
 export function useShipping(
   pincode?: string,
-  opts?: { forceRefreshKey?: any }
+  opts?: { forceRefreshKey?: unknown }
 ): UseShippingResult {
   const [options, setOptions] = useState<ShippingOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const cartItems = useCart((s) => s.items);
+  const cartItems = useCart((s) => s.items) as CartItem[];
   const subtotal = useCart((s) =>
     s.items.reduce((acc, it) => acc + it.price * it.quantity, 0)
   );
@@ -55,9 +67,10 @@ export function useShipping(
   const selected = useCheckoutStore((s) => s.shippingOption);
 
   // compute approximate weight from items (fallback to 0.5kg)
+  type ItemWithWeight = CartItem & { weight?: number };
   const weight = useMemo(() => {
-    const w = cartItems?.reduce(
-      (acc: number, it: any) => acc + (it.weight ?? 0.1) * (it.quantity ?? 1),
+    const w = (cartItems as ItemWithWeight[] | undefined)?.reduce(
+      (acc: number, it: ItemWithWeight) => acc + (it.weight ?? 0.1) * (it.quantity ?? 1),
       0
     );
     return w && w > 0 ? Number(w.toFixed(2)) : 0.5;
@@ -101,10 +114,14 @@ export function useShipping(
       );
 
       if (!res.ok) {
-        const txt = await res.json().catch(() => null);
-        throw new Error(
-          txt?.error || txt?.message || `Shiprocket returned ${res.status}`
-        );
+        const txt = await res.json().catch(() => null) as unknown;
+        let errorMessage: string | null = null;
+        if (txt && typeof txt === 'object') {
+          const t = txt as Record<string, unknown>;
+          if (typeof t.error === 'string') errorMessage = t.error;
+          else if (typeof t.message === 'string') errorMessage = t.message;
+        }
+        throw new Error(errorMessage ?? `Shiprocket returned ${res.status}`);
       }
 
       const json = await res.json();
@@ -112,9 +129,18 @@ export function useShipping(
       setOptions(normalized);
 
       if (normalized.length > 0) {
-        const fastest = normalized
-          .filter((o) => typeof o.raw?.etd_hours === "number")
-          .sort((a, b) => a.raw.etd_hours - b.raw.etd_hours)[0];
+        const mapped = normalized.map((o) => {
+          const raw = o.raw as Record<string, unknown> | undefined;
+          const v = raw && 'etd_hours' in raw ? raw['etd_hours'] : undefined;
+          const etd = typeof v === 'number' ? v : (typeof v === 'string' && !Number.isNaN(Number(v)) ? Number(v) : undefined);
+          return { option: o, etd };
+        });
+
+        const fastestEntry = mapped
+          .filter((m) => typeof m.etd === 'number')
+          .sort((a, b) => (a.etd as number) - (b.etd as number))[0];
+
+        const fastest = fastestEntry ? fastestEntry.option : undefined;
 
         if (fastest && (!selected || fastest.rate !== selected.rate)) {
           setShippingOption(fastest);
@@ -122,8 +148,11 @@ export function useShipping(
       } else {
         setShippingOption(null);
       }
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to fetch shipping options");
+    } catch (err: unknown) {
+      const message = err && typeof err === 'object' && 'message' in err && typeof (err as { message?: unknown }).message === 'string'
+        ? (err as { message?: string }).message
+        : null;
+      setError(message ?? "Failed to fetch shipping options");
       setOptions([]);
     } finally {
       setIsLoading(false);
@@ -132,11 +161,25 @@ export function useShipping(
 
   // create a *stable* debounced function — only recreate when forceRefreshKey changes
   // this prevents recreation on every weight/subtotal/paymentMethod change
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const debounced = useMemo(
-    () => debounce((pc: string) => fetchOptions(pc), 600),
-    [opts?.forceRefreshKey]
-  );
+  const fetchOptionsCb = useRef<((pc: string) => Promise<void>) | undefined>(undefined);
+
+  // wrap fetchOptions in a stable ref so debounced can call latest impl
+  fetchOptionsCb.current = fetchOptions;
+
+  const forceRefreshKey = opts?.forceRefreshKey;
+
+  type DebouncedFn = ((pc: string) => void) & { cancel: () => void };
+  const noopDebounced: DebouncedFn = Object.assign(() => {}, { cancel: () => {} });
+  const debouncedRef = useRef<DebouncedFn>(noopDebounced);
+
+  // Recreate debounced function when `forceRefreshKey` changes.
+  useEffect(() => {
+    const d = debounce((pc: string) => fetchOptionsCb.current && fetchOptionsCb.current(pc), 600) as DebouncedFn;
+    debouncedRef.current = d;
+    return () => {
+      d.cancel();
+    };
+  }, [forceRefreshKey]);
 
   useEffect(() => {
     if (!pincode || !/^[1-9][0-9]{5}$/.test(pincode)) {
@@ -146,12 +189,12 @@ export function useShipping(
     }
 
     // call the stable debounced function
-    debounced(pincode);
+    debouncedRef.current(pincode);
 
     return () => {
-      debounced.cancel();
+      debouncedRef.current.cancel();
     };
-  }, [pincode, debounced]);
+  }, [pincode]);
 
   // public refresh to run immediate fetch using latest params
   const refresh = () => {

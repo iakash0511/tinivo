@@ -6,7 +6,7 @@ export type ShippingOption = {
   estimated_days?: string | number;
   rate?: number;
   service_type?: string;
-  raw?: any;
+  raw?: unknown;
 };
 
 export type CheckoutInfo = {

@@ -19,3 +19,8 @@ export interface Product {
   giftWrap: boolean;
   compareAtPrice?: number;
 }
+
+export interface ProductPage {
+  products: Product[]
+  totalCount?: number
+}

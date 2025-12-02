@@ -4,14 +4,15 @@ import useSWRInfinite from 'swr/infinite'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useMemo } from 'react'
+import type { Product, ProductPage } from '@/interface/ProductInterface'
 
 const fetcher = (url: string) => fetch(url).then(res => {
   if (!res.ok) throw new Error('Fetch failed')
-  return res.json()
+  return res.json() as Promise<ProductPage>
 })
 
 // Key generator for useSWRInfinite
-const getKey = (pageIndex: number, previousPageData: any, limit = 24) => {
+const getKey = (pageIndex: number, previousPageData: ProductPage | null, limit = 24) => {
   // If previous page is empty, we reached the end
   if (previousPageData && previousPageData.products && previousPageData.products.length === 0) return null
   const page = pageIndex + 1
@@ -21,7 +22,7 @@ const getKey = (pageIndex: number, previousPageData: any, limit = 24) => {
 export default function ShopPageClient() {
   const limit = 24
 
-  const { data, error, size, setSize, isValidating } = useSWRInfinite(
+  const { data, error, size, setSize } = useSWRInfinite<ProductPage, Error>(
     (index, prev) => getKey(index, prev, limit),
     fetcher,
     {
@@ -31,8 +32,8 @@ export default function ShopPageClient() {
     }
   )
 
-  const pages = data ?? []
-  const products = useMemo(() => pages.flatMap(p => p.products || []), [pages])
+  const pages: ProductPage[] = useMemo(() => data ?? [], [data])
+  const products: Product[] = useMemo(() => pages.flatMap(p => p.products || []), [pages])
   const totalCount = pages[0]?.totalCount ?? 0
   const pageCount = Math.ceil((totalCount || 0) / limit)
 
@@ -49,7 +50,7 @@ export default function ShopPageClient() {
         )}
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
-          {products.map((p: any) => (
+          {products.map((p: Product) => (
             <Link
               key={p._id}
               href={`/product/${p.slug}`}

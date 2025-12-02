@@ -3,7 +3,7 @@ import { useCartTotal } from "@/hooks/useCartTotal"
 import { useCart } from "@/store/cart/cart-store"
 
 export default function CheckoutSummary({ isMobile }: { isMobile?: boolean } = {}) {
-  const { subtotal, giftWrapTotal, finalPayable, saved, shipping, compareTotal } = useCartTotal()
+  const { subtotal, giftWrapTotal, finalPayable, saved, shipping } = useCartTotal()
   const items = useCart((state) => state.items)
 
   const fmt = (v: number | string) =>

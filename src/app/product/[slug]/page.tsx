@@ -1,27 +1,48 @@
-'use client'
-import useSWR from 'swr'
-import ProductGallery from '@/components/product/ProductGallery'
-import ProductInfo from '@/components/product/ProductInfo'
-import ProductTabs from '@/components/product/ProductTabs'
-import { useParams } from 'next/navigation'
+// app/product/[slug]/page.tsx
+import React from "react"
+import ProductGallery from "@/components/product/ProductGallery"
+import ProductInfo from "@/components/product/ProductInfo"
+import ProductTabs from "@/components/product/ProductTabs"
+import { notFound } from "next/navigation"
+import { getSanityClient } from "@/lib/getSanityClient"
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+export const revalidate = 60 // Next will revalidate this page every 60s (ISR)
 
-export default function ProductPageClient() {
-  const params = useParams()
-  const slug = params.slug as string
-  const { data: product, error, isLoading } = useSWR(`/api/product/${slug}`, fetcher, {
-    dedupingInterval: 60000, // same client won't refetch within 60s
-    revalidateOnFocus: false
-  })
+async function fetchProductBySlug(slug: string) {
+  const client = await getSanityClient()
+  const query = `*[_type == "product" && slug.current == $slug][0]{
+    _id,
+    name,
+    price,
+    compareAtPrice,
+    quantity,
+    description,
+    shipping,
+    care,
+    "images": images[].asset->url,
+    "slug": slug.current
+  }`
+  const product = await client.fetch(query, { slug })
+  return product
+}
 
-  if (isLoading) return <div className='flex justify-between items-center'>Loading your mini joy... 💜</div>
-  if (error || !product) return <div className='flex justify-between items-center'>Oops! We couldn’t find that product 😔</div>
+export default async function ProductPage({ params }: { params?: Promise<{ slug: string }> }) {
+  const resolvedParams = params ? await params : undefined
+  const slug = resolvedParams?.slug
+
+  if (!slug) {
+    notFound()
+  }
+  const product = await fetchProductBySlug(slug)
+
+  if (!product) {
+    notFound()
+  }
 
   return (
     <main className="min-h-screen px-4 py-12">
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10">
-        <ProductGallery images={product.images} />
+        <ProductGallery images={product.images || []} />
         <div className="flex flex-col gap-8">
           <ProductInfo product={product} />
           <ProductTabs description={product.description} shipping={product.shipping} care={product.care} />

@@ -35,7 +35,7 @@ export default function ProductTabs({
           </button>
         ))}
       </div>
-      <p className="text-neutral-700 font-body">{tabs.find((t) => t.key === active)?.content}</p>
+      <p className="text-neutral-700 font-body max-h-72 overflow-auto">{tabs.find((t) => t.key === active)?.content}</p>
     </div>
   )
 }

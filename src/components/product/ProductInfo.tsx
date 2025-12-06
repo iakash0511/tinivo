@@ -4,19 +4,19 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/store/cart/cart-store";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGift, faCartShopping } from "@fortawesome/free-solid-svg-icons";
+import { faCartShopping, faGift } from "@fortawesome/free-solid-svg-icons";
 import { useState } from "react";
 import { Product } from "@/interface/ProductInterface";
 
 export default function ProductInfo({ product }: { product: Product }) {
-  const addToCart = useCart((state) => state.addItem);
+  const addToCart = useCart((state) => state.addItem) as (item: Product & { quantity: number; giftWrap: boolean }) => void;
   const router = useRouter();
   const [giftWrap, setGiftWrap] = useState(false);
 
   const isAvailable = Boolean(product.quantity && product.quantity > 0);
 
   const handleAddToCart = () => {
-    addToCart({ ...product, _id: product._id, quantity: 1, giftWrap });
+    addToCart({ ...product, _id: product._id, quantity: 1, giftWrap, image: product.images?.[0] });
   };
 
   const handleBuyNow = () => {
@@ -43,7 +43,7 @@ export default function ProductInfo({ product }: { product: Product }) {
           Shipping will be calculated at checkout.
         </p>
         <p className="text-sm text-neutral-600 text-left">
-          ✨Free Shipping over ₹599
+          ✨Free Shipping over ₹999
         </p>
       </div>
       {isAvailable && (
@@ -68,10 +68,10 @@ export default function ProductInfo({ product }: { product: Product }) {
         <div className="flex gap-4">
           <Button
             onClick={handleAddToCart}
-            className="bg-accent1 hover:opacity-90 flex-1 font-cta"
+            className="bg-accent1 hover:opacity-90 flex-1 font-cta text-white"
           >
-            <FontAwesomeIcon icon={faCartShopping} className="mr-2" /> Add to
-            Cart
+            <FontAwesomeIcon icon={faCartShopping} className="mr-2 text-neutral-100/80" /> Add to
+            Bag
           </Button>
 
           <Button

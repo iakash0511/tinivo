@@ -3,50 +3,282 @@ import React from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { getSanityClient } from "@/lib/getSanityClient"
-import { Product, ProductPage } from '@/interface/ProductInterface'
+import type { Product, ProductPage } from "@/interface/ProductInterface"
+import qs from "querystring"
+import FilterBar from "@/components/filterBar/FilterBar"
 
-export const revalidate = 60 // cache shop page HTML for 60s
+export const revalidate = 60 // ISR
 
-const PRODUCTS_PER_PAGE = 24
+const DEFAULT_PER_PAGE = 24
+const MAX_PER_PAGE = 48
 
-async function fetchProducts(page = 1, limit = PRODUCTS_PER_PAGE): Promise<ProductPage> {
+type Params = {
+  page?: string | string[]
+  perPage?: string | string[]
+  search?: string | string[]
+  category?: string | string[]
+  tags?: string | string[]
+  min?: string | string[]
+  max?: string | string[]
+  sort?: string | string[]
+  bestseller?: string | string[]
+  featured?: string | string[]
+  inStock?: string | string[]
+}
+
+function toArray(v?: string | string[]) {
+  if (!v) return undefined
+  return Array.isArray(v) ? v : [v]
+}
+
+function buildFilterAndParams(params: {
+  search?: string
+  category?: string
+  tags?: string[]
+  min?: number
+  max?: number
+  bestseller?: boolean
+  featured?: boolean
+  inStock?: boolean
+}) {
+  const parts: string[] = []
+  const values: Record<string, unknown> = {}
+
+  if (params.search) {
+    parts.push('(name match $search || description match $search)')
+    values.search = `*${params.search}*`
+  }
+
+  if (params.category) {
+    parts.push('category == $category')
+    values.category = params.category
+  }
+
+  if (params.tags && params.tags.length > 0) {
+    parts.push(`count((tags[])[@ in $tags]) > 0`)
+    values.tags = params.tags
+  }
+
+  if (typeof params.min === 'number') {
+    parts.push('price >= $min')
+    values.min = params.min
+  }
+
+  if (typeof params.max === 'number') {
+    parts.push('price <= $max')
+    values.max = params.max
+  }
+
+  if (params.bestseller) {
+    parts.push('isBestseller == true')
+  }
+
+  if (params.featured) {
+    parts.push('isFeatured == true')
+  }
+
+  if (params.inStock) {
+    parts.push('quantity > 0')
+  }
+
+  const filter = parts.length > 0 ? parts.join(' && ') : 'true'
+  return { filter, values }
+}
+
+async function fetchProductsServer(options: {
+  page?: number
+  perPage?: number
+  search?: string
+  category?: string
+  tags?: string[]
+  min?: number
+  max?: number
+  sort?: string
+  bestseller?: boolean
+  featured?: boolean
+  inStock?: boolean
+}): Promise<ProductPage> {
   const client = await getSanityClient()
-  const offset = (page - 1) * limit
+  const page = Math.max(1, options.page || 1)
+  const perPage = Math.min(MAX_PER_PAGE, Math.max(6, options.perPage || DEFAULT_PER_PAGE))
+  const offset = (page - 1) * perPage
 
-  const productsQuery = `*[_type == "product"] | order(_createdAt desc)[${offset}...${offset + limit}]{
+  const { filter, values } = buildFilterAndParams({
+    search: options.search,
+    category: options.category,
+    tags: options.tags,
+    min: options.min,
+    max: options.max,
+    bestseller: options.bestseller,
+    featured: options.featured,
+    inStock: options.inStock
+  })
+
+  // sort map
+  let orderExpr = '_createdAt desc'
+  switch (options.sort) {
+    case 'price_asc':
+      orderExpr = 'price asc'
+      break
+    case 'price_desc':
+      orderExpr = 'price desc'
+      break
+    case 'bestseller':
+      orderExpr = 'isBestseller desc, _createdAt desc'
+      break
+    case 'featured':
+      orderExpr = 'isFeatured desc, _createdAt desc'
+      break
+    case 'newest':
+    default:
+      orderExpr = '_createdAt desc'
+  }
+
+  const productsQuery = `*[_type == "product" && ${filter}] | order(${orderExpr})[${offset}...${offset + perPage}]{
     _id,
     name,
     price,
     compareAtPrice,
     quantity,
+    category,
+    tags,
+    isBestseller,
+    isFeatured,
     "image": images[0].asset->url,
     "slug": slug.current
   }`
 
-  const countQuery = `count(*[_type == "product"])`
+  const countQuery = `count(*[_type == "product" && ${filter}])`
 
   const [products, totalCount] = await Promise.all([
-    client.fetch(productsQuery) as Promise<Product[]>,
-    client.fetch(countQuery) as Promise<number>
+    client.fetch(productsQuery, values) as Promise<Product[]>,
+    client.fetch(countQuery, values) as Promise<number>
   ])
 
   return { products, totalCount }
 }
 
-export default async function ShopPage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
-  const params = searchParams ? await searchParams : {}
-  const pageParam = params.page as string | string[] | undefined
-  const page = Math.max(1, Number(pageParam || "1"))
+// Small UI helpers
+function buildQuery(params: Record<string, unknown>) {
+  const q: Record<string, string> = {}
+  for (const k of Object.keys(params)) {
+    const v = params[k]
+    if (v === undefined || v === null) continue
+    if (typeof v === 'string' && v.trim() === '') continue
+    q[k] = String(v)
+  }
+  const str = qs.stringify(q)
+  return str ? `?${str}` : ''
+}
 
-  const { products, totalCount } = await fetchProducts(page, PRODUCTS_PER_PAGE)
-  const pageCount = Math.ceil((totalCount || 0) / PRODUCTS_PER_PAGE)
+/**
+ * NOTE: searchParams is typed as `Params | undefined` — NOT Promise<Params>.
+ * Next's App Router passes the parsed searchParams object directly.
+ */
+export default async function ShopPage({
+  searchParams,
+}: {
+  // <-- important: Promise<any> here satisfies Next's generated type-checker
+  searchParams?: Promise<Params>;
+}) {
+  // Await works whether Next passes a Promise or an already-resolved object.
+  const rawParams: Params = (await searchParams) ?? {}
+  // Coerce into our Params type (safe runtime handling below)
+  const params: Params = {
+    page: rawParams.page,
+    perPage: rawParams.perPage,
+    search: rawParams.search,
+    category: rawParams.category,
+    tags: rawParams.tags,
+    min: rawParams.min,
+    max: rawParams.max,
+    sort: rawParams.sort,
+    bestseller: rawParams.bestseller,
+    featured: rawParams.featured,
+    inStock: rawParams.inStock,
+  }
+
+
+
+  const page = Math.max(1, Number(Array.isArray(params.page) ? params.page[0] : params.page || "1"))
+  const perPage = Math.min(MAX_PER_PAGE, Number(Array.isArray(params.perPage) ? params.perPage[0] : params.perPage || `${DEFAULT_PER_PAGE}`))
+
+  const search = Array.isArray(params.search) ? params.search[0] : params.search
+  const category = Array.isArray(params.category) ? params.category[0] : params.category
+  const tags = toArray(params.tags)
+  const min = params.min ? Number(Array.isArray(params.min) ? params.min[0] : params.min) : undefined
+  const max = params.max ? Number(Array.isArray(params.max) ? params.max[0] : params.max) : undefined
+  const sort = Array.isArray(params.sort) ? params.sort[0] : params.sort
+  const bestseller = params.bestseller === '1' || params.bestseller === 'true'
+  const featured = params.featured === '1' || params.featured === 'true'
+  const inStock = params.inStock === '1' || params.inStock === 'true'
+
+  const { products, totalCount } = await fetchProductsServer({
+    page,
+    perPage,
+    search,
+    category,
+    tags,
+    min,
+    max,
+    sort,
+    bestseller,
+    featured,
+    inStock
+  })
+
+  const pageCount = Math.max(1, Math.ceil((totalCount || 0) / perPage))
   const isReachingEnd = page >= pageCount
+
+  const CATEGORIES = [
+    { label: 'All', value: '' },
+    { label: 'Mini Accessories', value: 'mini-accessories' },
+    { label: 'Stationery', value: 'stationery' },
+    { label: 'Home Decor', value: 'home-decor' },
+    { label: 'Gift Set', value: 'gift-set' },
+  ]
+
+  const SORTS = [
+    { label: 'Newest', value: 'newest' },
+    { label: 'Price: Low → High', value: 'price_asc' },
+    { label: 'Price: High → Low', value: 'price_desc' },
+    { label: 'Bestsellers', value: 'bestseller' },
+    { label: 'Featured', value: 'featured' },
+  ]
+
+  const baseParams = {
+    search,
+    category,
+    tags: tags ? tags.join(',') : undefined,
+    min,
+    max,
+    sort,
+    bestseller: bestseller ? '1' : undefined,
+    featured: featured ? '1' : undefined,
+    inStock: inStock ? '1' : undefined,
+    perPage
+  }
 
   return (
     <main className="min-h-screen bg-softPink px-4 py-12">
       <div className="max-w-6xl mx-auto">
         <h1 className="text-3xl font-heading mb-6 text-center">All Products ✨</h1>
 
+       {/* FilterBar (client) */}
+        <FilterBar
+          initialSearch={search || ''}
+          initialCategory={category || ''}
+          initialSort={sort || 'newest'}
+          initialMin={min}
+          initialMax={max}
+          initialBestseller={bestseller}
+          initialInStock={inStock}
+          perPage={perPage}
+          categories={CATEGORIES}
+          sorts={SORTS}
+        />
+
+        {/* Product Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
           {products.map((p: Product) => (
             <Link key={p._id} href={`/product/${p.slug}`} className="bg-white rounded-2xl p-3 shadow-sm hover:shadow-md transition relative">
@@ -82,14 +314,14 @@ export default async function ShopPage({ searchParams }: { searchParams?: Promis
         {/* pagination */}
         <div className="mt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Link href={`/shop?page=${Math.max(1, page - 1)}`} className={`px-4 py-2 rounded-lg bg-white shadow-sm ${page <= 1 ? "opacity-60 pointer-events-none" : ""}`}>Prev</Link>
+            <Link href={`/shop${buildQuery({ ...baseParams, page: Math.max(1, page - 1) })}`} className={`px-4 py-2 rounded-lg bg-white shadow-sm ${page <= 1 ? "opacity-60 pointer-events-none" : ""}`}>Prev</Link>
             <div className="px-4 py-2 rounded-lg bg-white shadow-sm text-sm">Page {page} of {pageCount || 1}</div>
-            <Link href={`/shop?page=${page + 1}`} className={`px-4 py-2 rounded-lg bg-primary text-white font-semibold ${isReachingEnd ? "opacity-60 pointer-events-none" : ""}`}>{isReachingEnd ? "No more" : "Next"}</Link>
+            <Link href={`/shop${buildQuery({ ...baseParams, page: page + 1 })}`} className={`px-4 py-2 rounded-lg bg-primary text-white font-semibold ${isReachingEnd ? "opacity-60 pointer-events-none" : ""}`}>{isReachingEnd ? "No more" : "Next"}</Link>
           </div>
 
           <div className="flex items-center gap-3">
-            <Link href={`/shop?page=1`} className={`px-4 py-2 rounded-lg bg-white shadow-sm ${page === 1 ? "opacity-60 pointer-events-none" : ""}`}>First</Link>
-            <Link href={`/shop?page=${pageCount}`} className={`px-4 py-2 rounded-lg bg-white shadow-sm ${isReachingEnd ? "opacity-60 pointer-events-none" : ""}`}>Last</Link>
+            <Link href={`/shop${buildQuery({ ...baseParams, page: 1 })}`} className={`px-4 py-2 rounded-lg bg-white shadow-sm ${page === 1 ? "opacity-60 pointer-events-none" : ""}`}>First</Link>
+            <Link href={`/shop${buildQuery({ ...baseParams, page: pageCount })}`} className={`px-4 py-2 rounded-lg bg-white shadow-sm ${isReachingEnd ? "opacity-60 pointer-events-none" : ""}`}>Last</Link>
             <div className="text-sm text-neutral-600">{totalCount ? `${totalCount} products` : ''}</div>
           </div>
         </div>

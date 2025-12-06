@@ -11,10 +11,11 @@ export const productBySlugQuery = `
     isBestseller,
     compareAtPrice,
     quantity,
+    tags,
   }
 `
 export const getBestSellers = `
-    *[_type == "product"] | order(_createdAt desc) {
+    *[_type == "product" && isBestseller == true] | order(_createdAt desc)[0..4] {
     _id,
     name,
     price,
@@ -23,6 +24,21 @@ export const getBestSellers = `
     quantity,
     "image": images[0].asset->url,
     description,
+    tags,
+  }
+`
+
+export const getFeaturedProducts = `
+    *[_type == "product" && isFeatured == true] | order(_createdAt desc)[0..4] {
+    _id,
+    name,
+    price,
+    "slug": slug.current,
+    compareAtPrice,
+    quantity,
+    "image": images[0].asset->url,
+    description,
+    tags,
   }
 `
 
@@ -36,6 +52,7 @@ export const getAllProducts = `
     quantity,
     "image": images[0].asset->url,
     category,
-    isBestseller
+    isBestseller,
+    tags,
   }
 `

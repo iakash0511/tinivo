@@ -2,9 +2,13 @@
 import React from "react";
 import Autoplay from "embla-carousel-autoplay"
 import { Carousel, CarouselContent, CarouselItem } from "../ui/carousel";
+import { usePathname } from "next/navigation";
 
 export default function BannerComponent() {
-    const banners = [{heading: "Free Shipping🚛", subheading: "On Orders Over Rs.599💸"},
+    const curentPath = usePathname();
+    if (curentPath !== "/") return null;
+
+    const banners = [{heading: "Free Shipping🚛", subheading: "On Orders Over ₹999💸"},
     {heading: "New Arrivals📢", subheading: "Check Out Our Latest Collection👇"}];
     return (
         <Carousel 

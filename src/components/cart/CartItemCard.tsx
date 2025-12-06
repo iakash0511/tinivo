@@ -22,6 +22,7 @@ export default function CartItemCard({
     removeFromCart,
     toggleGiftWrap,
   } = useCart();
+  console.log("Rendering CartItemCard for item:", image);
 
   return (
     <div className="flex gap-4 rounded-2xl bg-white p-4 shadow-sm border border-neutral-200">

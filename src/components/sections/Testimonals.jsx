@@ -10,19 +10,19 @@ const testimonials = [
   {
     quote: "I was blown away by the packaging and how thoughtfully everything was arranged. Tinivo makes gifting feel magical.",
     name: "Ishita Verma",
-    avatar: "/avatars/ishita.jpg",
+    avatar: "/avatars/ishita.jpg" || '',
     rating: 5,
   },
   {
     quote: "The tiny things had such a big emotional impact. My friend loved it and cried! I'm coming back for more.",
     name: "Sneha Kapoor",
-    avatar: "/avatars/sneha.jpg",
+    avatar: "/avatars/sneha.jpg" || '',
     rating: 5,
   },
   {
     quote: "From browsing to checkout, everything felt smooth. I didn’t expect such joy from a mini gift. Beautifully done!",
     name: "Rhea Malhotra",
-    avatar: "/avatars/rhea.jpg",
+    avatar: "/avatars/rhea.jpg" || '',
     rating: 4,
   },
 ]

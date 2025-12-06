@@ -25,7 +25,7 @@ export default function CartSummary() {
       </div>
       <div className="flex justify-between text-sm text-neutral-700">
         <span>Shipping</span>
-        <span className={`${(shipping || finalPayable < 599) ? 'text-accent1' : 'text-green-600'}`}>{shipping ? shipping : finalPayable > 599 ? 'Free': 'Enter Pincode'}</span>
+        <span className={`${(shipping || finalPayable < 999) ? 'text-accent1' : 'text-green-600'}`}>{shipping ? shipping : finalPayable > 999 ? 'Free': 'Enter Pincode'}</span>
       </div>
       {giftWrapTotal > 0 && (
         <div className="flex justify-between text-sm text-neutral-700">
@@ -42,11 +42,11 @@ export default function CartSummary() {
       </div>
 
       <p className="text-xs text-pink-500 mt-1">
-        🎁 Orders above ₹499 get **free surprise mini gift**! Don’t miss out.
+        🎁 Orders above ₹599 get **free surprise mini gift**! Don’t miss out.
       </p>
 
       <p className="text-xs text-blue-500">
-        🚚 Orders placed before <strong>9PM</strong> will be shipped **today**.
+        🚚 Orders placed before <strong>7PM</strong> will be shipped **today**.
       </p>
       <SheetClose asChild>
         <Button className="w-full font-cta text-sm rounded-xl mt-4 hover:bg-accent1 text-white" onClick={() => router.push('/checkout')}>

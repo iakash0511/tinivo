@@ -5,7 +5,7 @@ import { Carousel, CarouselContent, CarouselItem } from "../ui/carousel";
 import { usePathname } from "next/navigation";
 
 export default function BannerComponent() {
-    let curentPath = usePathname();
+    const curentPath = usePathname();
     if (curentPath !== "/") return null;
 
     const banners = [{heading: "Free Shipping🚛", subheading: "On Orders Over ₹999💸"},

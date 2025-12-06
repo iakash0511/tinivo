@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/store/cart/cart-store";
 import { useRouter } from "next/navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGift, faCartShopping } from "@fortawesome/free-solid-svg-icons";
+import { faCartShopping, faGift } from "@fortawesome/free-solid-svg-icons";
 import { useState } from "react";
 import { Product } from "@/interface/ProductInterface";
 
@@ -46,7 +46,7 @@ export default function ProductInfo({ product }: { product: Product }) {
           ✨Free Shipping over ₹999
         </p>
       </div>
-      {/* {isAvailable && (
+      {isAvailable && (
         <div className="flex items-center gap-2 ">
           <input
             type="checkbox"
@@ -62,7 +62,7 @@ export default function ProductInfo({ product }: { product: Product }) {
             <FontAwesomeIcon icon={faGift} /> Add Gift Wrap (+₹49)
           </label>
         </div>
-      )} */}
+      )}
 
       {isAvailable && (
         <div className="flex gap-4">

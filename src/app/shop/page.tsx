@@ -45,7 +45,6 @@ function buildFilterAndParams(params: {
   const values: Record<string, unknown> = {}
 
   if (params.search) {
-    // name or description match (case-insensitive partial)
     parts.push('(name match $search || description match $search)')
     values.search = `*${params.search}*`
   }
@@ -56,7 +55,6 @@ function buildFilterAndParams(params: {
   }
 
   if (params.tags && params.tags.length > 0) {
-    // require any of the tags to be present
     parts.push(`count((tags[])[@ in $tags]) > 0`)
     values.tags = params.tags
   }
@@ -162,7 +160,6 @@ async function fetchProductsServer(options: {
 
 // Small UI helpers
 function buildQuery(params: Record<string, unknown>) {
-  // remove undefined/null/empty string
   const q: Record<string, string> = {}
   for (const k of Object.keys(params)) {
     const v = params[k]
@@ -174,8 +171,34 @@ function buildQuery(params: Record<string, unknown>) {
   return str ? `?${str}` : ''
 }
 
-export default async function ShopPage({ searchParams }: { searchParams?: Params }) {
-  const params: Params = (searchParams as Params) ?? {}
+/**
+ * NOTE: searchParams is typed as `Params | undefined` — NOT Promise<Params>.
+ * Next's App Router passes the parsed searchParams object directly.
+ */
+export default async function ShopPage({
+  searchParams,
+}: {
+  // <-- important: Promise<any> here satisfies Next's generated type-checker
+  searchParams?: Promise<Params>;
+}) {
+  // Await works whether Next passes a Promise or an already-resolved object.
+  const rawParams: Params = (await searchParams) ?? {}
+  // Coerce into our Params type (safe runtime handling below)
+  const params: Params = {
+    page: rawParams.page,
+    perPage: rawParams.perPage,
+    search: rawParams.search,
+    category: rawParams.category,
+    tags: rawParams.tags,
+    min: rawParams.min,
+    max: rawParams.max,
+    sort: rawParams.sort,
+    bestseller: rawParams.bestseller,
+    featured: rawParams.featured,
+    inStock: rawParams.inStock,
+  }
+
+
 
   const page = Math.max(1, Number(Array.isArray(params.page) ? params.page[0] : params.page || "1"))
   const perPage = Math.min(MAX_PER_PAGE, Number(Array.isArray(params.perPage) ? params.perPage[0] : params.perPage || `${DEFAULT_PER_PAGE}`))
@@ -207,7 +230,6 @@ export default async function ShopPage({ searchParams }: { searchParams?: Params
   const pageCount = Math.max(1, Math.ceil((totalCount || 0) / perPage))
   const isReachingEnd = page >= pageCount
 
-  // Some simple lists for the filter UI — you can fetch these from Sanity too if dynamic
   const CATEGORIES = [
     { label: 'All', value: '' },
     { label: 'Mini Accessories', value: 'mini-accessories' },
@@ -224,7 +246,6 @@ export default async function ShopPage({ searchParams }: { searchParams?: Params
     { label: 'Featured', value: 'featured' },
   ]
 
-  // base params helper (keeps current filters)
   const baseParams = {
     search,
     category,
@@ -256,8 +277,6 @@ export default async function ShopPage({ searchParams }: { searchParams?: Params
           categories={CATEGORIES}
           sorts={SORTS}
         />
-
-
 
         {/* Product Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">

@@ -5,6 +5,7 @@ import ProductInfo from "@/components/product/ProductInfo"
 import ProductTabs from "@/components/product/ProductTabs"
 import { notFound } from "next/navigation"
 import { getSanityClient } from "@/lib/getSanityClient"
+import ViewItemClient from "@/components/analytics/ViewItemClient"
 
 export const revalidate = 60 // Next will revalidate this page every 60s (ISR)
 
@@ -48,6 +49,7 @@ export default async function ProductPage({ params }: { params?: Promise<{ slug:
           <ProductTabs description={product.description} shipping={product.shipping} care={product.care} />
         </div>
       </div>
+      <ViewItemClient product={product} />
     </main>
   )
 }

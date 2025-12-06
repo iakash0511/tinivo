@@ -1,4 +1,5 @@
 // stores/useCart.ts
+import { pushAddToCart } from "@/lib/analyticsPush";
 import { create } from "zustand";
 
 export type CartItem = {
@@ -10,6 +11,8 @@ export type CartItem = {
   giftWrap?: boolean;
   image?: string; 
   compareAtPrice?: number;
+  category?: string;
+  tags?: string;
 };
 
 type CartStore = {
@@ -29,6 +32,7 @@ export const useCart = create<CartStore>((set, get) => ({
   addItem: (item) =>
     set((state) => {
       const exists = state.items.find((i) => i._id === item._id);
+      pushAddToCart(item, 1); // Push to dataLayer for analytics
       if (exists) {
         return {
           ...state,

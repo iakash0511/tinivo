@@ -20,6 +20,7 @@ import type { CheckoutInfo } from '@/store/checkout/checkout-store';
 import { useCartTotal } from "@/hooks/useCartTotal";
 import { useShipping } from "@/hooks/useShipping";
 import { Textarea } from "../ui/textarea";
+import { purchaseComplete } from "@/lib/analyticsPush";
 
 type Step = "shipping" | "payment";
 
@@ -159,6 +160,7 @@ export function CheckoutForm() {
         setSuccessMsg(
           "Order placed! We will contact you soon for confirmation."
         );
+        purchaseComplete(data.order?.id || data.order?.orderId || "COD_" + Date.now(), items, finalPayable);
         router.push(
           `/order-confirmation/${data.order?.id ?? data.order?.orderId ?? "COD_" + Date.now()}`
         );
@@ -213,7 +215,8 @@ export function CheckoutForm() {
               console.error("Shiprocket call failed", shipErr);
             }
 
-            setSuccessMsg("Payment successful — redirecting...");
+            setSuccessMsg("Payment successful — redirecting..."); 
+            purchaseComplete(saveData.order?.id || saveData.order?.orderId || "", items, finalPayable);
             router.push(
               `/order-confirmation/${saveData.order?.id ?? saveData.order?.orderId ?? ""}`
             );

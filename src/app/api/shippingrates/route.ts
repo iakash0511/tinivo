@@ -8,7 +8,6 @@ const SHIPROCKET_SOURCE_PINCODE = process.env.SHIPROCKET_SOURCE_PINCODE
 
 // in-memory token cache (serverless may get cold resets — but this reduces auth calls)
 let tokenCache: { token?: string; expiresAt?: number } = {}
-console.log('Shiprocket credentials loaded:', tokenCache)
 async function getShiprocketToken() {
   const now = Date.now()
   if (tokenCache.token && tokenCache.expiresAt && tokenCache.expiresAt > now + 5000) {

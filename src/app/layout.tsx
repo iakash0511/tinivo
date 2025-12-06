@@ -2,12 +2,13 @@ import "@/app/styles/globals.css";
 import type { Metadata } from "next";
 import { Poppins, Raleway, Nunito, Quicksand } from "next/font/google";
 import Header from "@/components/layout/Header";
-import { Toaster } from 'react-hot-toast'
+import { Toaster } from "react-hot-toast";
 import Footer from "@/components/layout/Footer";
 import BannerComponent from "@/components/layout/BannerComponent";
 import { OrderToasts } from "@/components/OrderToast";
-import "@/lib/fontawesome"
-import { Analytics } from "@vercel/analytics/next"
+import "@/lib/fontawesome";
+import { Analytics } from "@vercel/analytics/next";
+import Script from "next/script";
 
 const poppins = Poppins({ subsets: ["latin"], weight: "700", variable: "--font-logo" });
 const raleway = Raleway({ subsets: ["latin"], variable: "--font-heading" });
@@ -19,23 +20,33 @@ export const metadata: Metadata = {
   description: "Curated Korean-style mini products that spark joy.",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${poppins.variable} ${raleway.variable} ${nunito.variable} ${quicksand.variable}`}>
       <head>
         <link rel="icon" href="/assets/favicon.ico" sizes="any" />
       </head>
+
       <body className="font-body bg-white bg-gradient-to-br from-white to-white/80 text-neutral-dark">
-       <Analytics/>
+        {/* Vercel analytics (optional) */}
+        <Analytics />
+
+        {/* Google Analytics - place inside body */}
+        <Script id="ga-script" src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`} strategy="afterInteractive" />
+        <Script id="ga-init" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}', { send_page_view: true });
+          `}
+        </Script>
+
         <Header />
         <BannerComponent />
         <main className="min-h-[70vh] bg-softPink">{children}</main>
-         <Toaster reverseOrder={false} />
-         <OrderToasts />
+        <Toaster reverseOrder={false} />
+        <OrderToasts />
         <Footer />
       </body>
     </html>

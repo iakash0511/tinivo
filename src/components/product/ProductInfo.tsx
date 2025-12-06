@@ -9,7 +9,7 @@ import { useState } from "react";
 import { Product } from "@/interface/ProductInterface";
 
 export default function ProductInfo({ product }: { product: Product }) {
-  const addToCart = useCart((state) => state.addItem);
+  const addToCart = useCart((state) => state.addItem) as (item: Product & { quantity: number; giftWrap: boolean }) => void;
   const router = useRouter();
   const [giftWrap, setGiftWrap] = useState(false);
 

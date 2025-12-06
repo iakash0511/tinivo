@@ -29,7 +29,7 @@ export const getBestSellers = `
 `
 
 export const getFeaturedProducts = `
-    *[_type == "product" && isFeatured == true] | order(_createdAt desc)[0..3] {
+    *[_type == "product" && isFeatured == true] | order(_createdAt desc)[0..4] {
     _id,
     name,
     price,

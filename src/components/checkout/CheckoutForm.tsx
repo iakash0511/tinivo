@@ -303,15 +303,6 @@ export function CheckoutForm() {
         </div>
       </div>
 
-      {/* Messages */}
-      {errorMessage && (
-        <div
-          role="alert"
-          className="text-sm text-red-600 bg-red-50 p-3 rounded-md"
-        >
-          {errorMessage}
-        </div>
-      )}
       {successMsg && (
         <div
           role="status"
@@ -331,7 +322,17 @@ export function CheckoutForm() {
             exit={{ opacity: 0, y: -10 }}
             className="bg-white rounded-2xl shadow-sm p-6"
           >
-            <h2 className="text-xl font-heading mb-4">Shipping Details</h2>
+            <h2 className="text-xl font-heading mb-4">Shipping Details
+               {errorMessage && (
+              <div
+                role="alert"
+                className="text-sm text-red-600 mb-2 rounded-md"
+              >
+                {errorMessage}
+              </div>
+            )}
+            </h2>
+            {/* Messages */}
             <div className="space-y-6 w-full">
               <label className="block">
                 <Input

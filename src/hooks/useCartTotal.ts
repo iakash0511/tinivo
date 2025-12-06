@@ -42,7 +42,7 @@ export function useCartTotal(): CartTotal {
   const isOnline = paymentMethod === "upi" || paymentMethod === "card";
 
   // Now read shipping from store if present, otherwise fallback to old rule
-  const shipping = total > 599 ? 0 : typeof shippingOption?.rate === 'number' ? shippingOption.rate : 0;
+  const shipping = total > 999 ? 0 : typeof shippingOption?.rate === 'number' ? shippingOption.rate : 0;
 
   const discountRate = isOnline ? 0.02 : 0;
   const saved = compareTotal - subtotal;

@@ -17,7 +17,7 @@ const quicksand = Quicksand({ subsets: ["latin"], weight: "700", variable: "--fo
 
 export const metadata: Metadata = {
   title: "Tinivo – Small Things. Big Joy.",
-  description: "Curated Korean-style mini products that spark joy.",
+  description: "Curated Korean/Kawaii-style mini products that spark joy.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -27,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" href="/assets/favicon.ico" sizes="any" />
       </head>
 
-      <body className="font-body bg-white bg-gradient-to-br from-white to-white/80 text-neutral-dark">
+      <body className="font-body bg-white bg-linear-to-br from-white to-white/80 text-neutral-dark">
         {/* Vercel analytics (optional) */}
         <Analytics />
 

@@ -10,9 +10,9 @@ export default function CartDrawer() {
   const items = useCart((state) => state.items);
 
   const isEmpty = items.length === 0;
-
+  console.log("CartDrawer rendering, isEmpty:", items);
   return (
-    <div className="flex flex-col h-full bg-white shadow-lg">
+    <div className="flex flex-col h-full bg-softPink shadow-lg">
       {/* Header */}
       <SheetHeader className="px-6 pt-4 shrink-0">
         <SheetTitle className="font-logo text-lg">Your Cart</SheetTitle>
@@ -26,7 +26,7 @@ export default function CartDrawer() {
           </div>
         ) : (
           <ScrollArea className="h-full pr-2">
-            <div className="flex flex-col gap-4 ">
+            <div className="flex flex-col gap-4">
               {items.map((item) => (
                 <CartItemCard key={item._id} id={item._id} name={item.name} price={item.price} quantity={item.quantity} image={item.image} giftWrap={item.giftWrap}/>
               ))}
@@ -37,7 +37,7 @@ export default function CartDrawer() {
 
       {/* Summary */}
       {!isEmpty && (
-        <div className="sticky bottom-0 z-10 bg-white border-t border-neutral-200 p-4">
+        <div className="sticky bottom-0 z-10 border-t border-neutral-200 p-4">
           <CartSummary />
         </div>
       )}

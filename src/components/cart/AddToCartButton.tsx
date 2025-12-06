@@ -26,6 +26,7 @@ export default function AddToCartButton({ item, quantity, isDisabled }: { item: 
         name: item.name,
         price: item.price,
         quantity: quantity ? quantity : 1,
+        image: item.image,
         giftWrap: false,
         compareAtPrice: item.compareAtPrice,
     });

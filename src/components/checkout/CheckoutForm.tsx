@@ -161,6 +161,11 @@ export function CheckoutForm() {
           "Order placed! We will contact you soon for confirmation."
         );
         purchaseComplete(data.order?.id || data.order?.orderId || "COD_" + Date.now(), items, finalPayable);
+        fetch("/api/order-email", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order: data.order }), 
+        }).catch((err) => console.error("order-email failed", err));
         router.push(
           `/order-confirmation/${data.order?.id ?? data.order?.orderId ?? "COD_" + Date.now()}`
         );
@@ -217,6 +222,11 @@ export function CheckoutForm() {
 
             setSuccessMsg("Payment successful — redirecting..."); 
             purchaseComplete(saveData.order?.id || saveData.order?.orderId || "", items, finalPayable);
+            fetch("/api/order-email", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ order: saveData.order }),
+            }).catch((err) => console.error("order-email failed", err));
             router.push(
               `/order-confirmation/${saveData.order?.id ?? saveData.order?.orderId ?? ""}`
             );

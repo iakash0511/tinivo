@@ -25,7 +25,7 @@ const reasons = [
   {
     emoji: '🎁',
     title: 'Wrapped With Love',
-    description: <span>Unboxing <span className='group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-primary group-hover:to-accent1/50 group-hover:text-transparent text-primary underline font-bold'>Tinivo</span> feels like opening a warm hug — whether it’s a gift for someone you love or a little treat for yourself.</span>,
+    description: <span>Unboxing <span className='group-hover:bg-clip-text group-hover:bg-linear-to-r group-hover:from-primary group-hover:to-accent1/50 group-hover:text-transparent text-primary underline font-bold'>Tinivo</span> feels like opening a warm hug — whether it’s a gift for someone you love or a little treat for yourself.</span>,
   },
   {
     emoji: '🌟',

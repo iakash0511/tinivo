@@ -6,7 +6,7 @@ const toEmail = process.env.SALES_ALERT_EMAIL;
 
 type OrderItem = {
   name: string;
-  qty: number;
+  quantity: number;
   price: number;
 };
 
@@ -51,7 +51,7 @@ export async function sendOrderEmail(order: OrderForEmail) {
       ? order.items
           .map(
             (item) =>
-              `• ${item.name} x${item.qty} – ₹${item.price * item.qty}`,
+              `• ${item.name} x${item.quantity} – ₹${item.price * item.quantity}`,
           )
           .join("\n")
       : "Items not available";
@@ -100,8 +100,8 @@ Time: ${
           ? order.items
               .map(
                 (item) =>
-                  `<li>${item.name} ×${item.qty} – ₹${
-                    item.price * item.qty
+                  `<li>${item.name} ×${item.quantity} – ₹${
+                    item.price * item.quantity
                   }</li>`,
               )
               .join("")

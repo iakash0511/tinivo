@@ -16,7 +16,8 @@ export default function HeroSection({ featuredProducts = [] }: { featuredProduct
     addToCart({ ...product, _id: product._id, quantity: 1, giftWrap: product?.giftWrap, image: product.image });
   };
 
-  const handleBuyNow = () => {
+  const handleBuyNow = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     handleAddToCart();
     router.push("/checkout");
   };
@@ -74,7 +75,7 @@ export default function HeroSection({ featuredProducts = [] }: { featuredProduct
         <h4 className="text-sm text-neutral-500 mb-3">Featured picks</h4>
         <div className="flex gap-4 overflow-x-auto pb-3">
           {featuredProducts.slice(0,4).map(p => (
-            <FeaturedCard p={p} handleBuyNow={handleBuyNow}/>
+            <FeaturedCard key={p._id} p={p} handleBuyNow={handleBuyNow}/>
           ))}
         </div>
       </div>

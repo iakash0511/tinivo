@@ -53,7 +53,6 @@ export function CheckoutForm() {
 
   const hasPlacedOrder = useRef(false);
 
-
   // Redirect if cart is empty + load Razorpay script
     useEffect(() => {
     // if order is placed, don't run empty-cart redirect logic
@@ -71,7 +70,7 @@ export function CheckoutForm() {
       script.setAttribute("data-razorpay", "1");
       document.body.appendChild(script);
     }
-  }, []);
+  });
 
 
   // 🧠 Load checkout info from localStorage on mount

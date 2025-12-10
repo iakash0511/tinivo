@@ -10,7 +10,6 @@ export default function CartDrawer() {
   const items = useCart((state) => state.items);
 
   const isEmpty = items.length === 0;
-  console.log("CartDrawer rendering, isEmpty:", items);
   return (
     <div className="flex flex-col h-full bg-softPink shadow-lg">
       {/* Header */}

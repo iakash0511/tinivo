@@ -21,28 +21,23 @@ export default function BestsellerCard({ item, id }: { item: BestSellerItem; id:
       whileTap={isAvailable ? { scale: 0.98 } : undefined}
       className="bg-white rounded-2xl shadow-md p-4 flex flex-col items-center text-center transition-all relative"
     >
-      {/* Sold Out badge (top-left) */}
-      {!isAvailable && (
-        <div className="absolute left-3 top-3 z-20">
-          <span className="inline-block bg-neutral-dark text-white text-xs font-semibold px-3 py-1 rounded-full">
-            SOLD OUT
-          </span>
-        </div>
-      )}
 
       {/* 👉 Clickable Image */}
-      <Link href={slug} className={`flex justify-center w-full`}>
+      <Link prefetch={false} href={slug} className={`flex justify-center w-full`}>
+      <div className="relative">
         <Image
           src={item.image}
           alt={item.name}
           width={200}
           height={200}
-          className="rounded-xl object-cover mb-4 cursor-pointer transition-transform duration-300 hover:scale-105"
+          className="rounded-xl object-contain mb-4 cursor-pointer transition-transform duration-300 hover:scale-105"
         />
+        <p className={`absolute top-0 left-0 ${isAvailable ? 'bg-accent1':'bg-neutral-400'} text-white p-1 rounded-md text-[0.7rem] italic`}>{isAvailable ? item.tags : 'Sold Out'}</p>
+         </div>
       </Link>
 
       {/* 👉 Clickable Name & Tag */}
-      <Link href={slug} className={`${contentEffect} w-full`}>
+      <Link prefetch={false} href={slug} className={`${contentEffect} w-full`}>
         {item.tag && (
           <div className="text-xs text-accent1 font-semibold mb-1">
             {item.tag}

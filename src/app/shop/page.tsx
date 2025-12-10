@@ -7,7 +7,7 @@ import type { Product, ProductPage } from "@/interface/ProductInterface"
 import qs from "querystring"
 import FilterBar from "@/components/filterBar/FilterBar"
 
-export const revalidate = 60 // ISR
+export const revalidate = 300 // revalidate every 5 minutes
 
 const DEFAULT_PER_PAGE = 24
 const MAX_PER_PAGE = 48
@@ -262,7 +262,6 @@ export default async function ShopPage({
   return (
     <main className="min-h-screen bg-softPink px-4 py-12">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-heading mb-6 text-center">All Products ✨</h1>
 
        {/* FilterBar (client) */}
         <FilterBar

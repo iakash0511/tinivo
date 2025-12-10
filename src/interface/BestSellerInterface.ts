@@ -8,4 +8,5 @@ export interface BestSellerItem {
   slug: string;
   compareAtPrice?: number;
   quantity?: number;
+  tags?: string;
 }

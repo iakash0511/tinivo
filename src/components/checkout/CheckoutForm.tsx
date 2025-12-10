@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -16,13 +16,25 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useCart } from "@/store/cart/cart-store";
 import { useCheckoutStore } from "@/store/checkout/checkout-store";
-import type { CheckoutInfo } from '@/store/checkout/checkout-store';
+import type { CheckoutInfo } from "@/store/checkout/checkout-store";
 import { useCartTotal } from "@/hooks/useCartTotal";
 import { useShipping } from "@/hooks/useShipping";
 import { Textarea } from "../ui/textarea";
 import { purchaseComplete } from "@/lib/analyticsPush";
 
 type Step = "shipping" | "payment";
+
+// 🔐 localStorage keys & default
+const CHECKOUT_STORAGE_KEY = "tinivo-checkout";
+
+const EMPTY_CHECKOUT: CheckoutInfo = {
+  fullName: "",
+  phoneNumber: "",
+  email: "",
+  address: "",
+  city: "",
+  pincode: "",
+};
 
 export function CheckoutForm() {
   const [step, setStep] = useState<Step>("shipping");
@@ -31,7 +43,7 @@ export function CheckoutForm() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const router = useRouter();
-  const { items } = useCart();
+  const { items, clearCart } = useCart();
   const { subtotal, finalPayable } = useCartTotal();
   const { checkoutInfo, setCheckoutInfo, paymentMethod, setPaymentMethod } =
     useCheckoutStore();
@@ -39,13 +51,18 @@ export function CheckoutForm() {
 
   const { isLoading } = useShipping(pincode);
 
-  useEffect(() => {
+  const hasPlacedOrder = useRef(false);
+
+
+  // Redirect if cart is empty + load Razorpay script
+    useEffect(() => {
+    // if order is placed, don't run empty-cart redirect logic
+    if (hasPlacedOrder.current) return;
+
     if (!items || items.length === 0) {
-      // If cart empty, redirect to home (defensive)
       router.push("/");
     }
 
-    // load Razorpay script only when on client
     const existing = document.querySelector("script[data-razorpay]");
     if (!existing) {
       const script = document.createElement("script");
@@ -54,7 +71,34 @@ export function CheckoutForm() {
       script.setAttribute("data-razorpay", "1");
       document.body.appendChild(script);
     }
-  }, [items, router]);
+  }, []);
+
+
+  // 🧠 Load checkout info from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(CHECKOUT_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as CheckoutInfo;
+        setCheckoutInfo(parsed);
+      }
+    } catch (err) {
+      console.error("Failed to load checkout info from localStorage", err);
+    }
+  }, [setCheckoutInfo]);
+
+  // 💾 Persist checkout info whenever it changes
+  useEffect(() => {
+    if (!checkoutInfo) return;
+    try {
+      window.localStorage.setItem(
+        CHECKOUT_STORAGE_KEY,
+        JSON.stringify(checkoutInfo)
+      );
+    } catch (err) {
+      console.error("Failed to save checkout info", err);
+    }
+  }, [checkoutInfo]);
 
   const paymentOptions = [
     { label: "UPI / GPay / Paytm", value: "upi", icon: faMobileAlt },
@@ -76,7 +120,8 @@ export function CheckoutForm() {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const getFieldError = (field: ShippingField) => {
-    const value = (checkoutInfo ? (checkoutInfo as CheckoutInfo)[field] : "") || "";
+    const value =
+      (checkoutInfo ? (checkoutInfo as CheckoutInfo)[field] : "") || "";
     if (!touched[field]) return "";
     const ok = validators[field](value);
     if (ok) return "";
@@ -91,7 +136,9 @@ export function CheckoutForm() {
     return messages[field];
   };
 
-  const isShippingValid = (Object.keys(validators) as ShippingField[]).every((k) => {
+  const isShippingValid = (
+    Object.keys(validators) as ShippingField[]
+  ).every((k) => {
     const fn = validators[k];
     const val = checkoutInfo ? (checkoutInfo as CheckoutInfo)[k] : "";
     return fn(val || "");
@@ -114,7 +161,6 @@ export function CheckoutForm() {
     setErrorMessage(null);
     setSuccessMsg(null);
 
-    // ensure shipping valid before trying to place payment order
     if (!isShippingValid) {
       markAllTouched();
       setStep("shipping");
@@ -124,9 +170,8 @@ export function CheckoutForm() {
 
     setLoading(true);
     try {
-      // Use finalPayable throughout
+      // COD FLOW
       if (paymentMethod === "cod") {
-        // Save order as COD with discounted final amount
         const res = await fetch("/api/save-order", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -146,7 +191,6 @@ export function CheckoutForm() {
         if (!res.ok) throw new Error("Failed to save COD order");
         const data = await res.json();
 
-        // Fire & forget Shiprocket but log errors
         try {
           await fetch(`/api/shiprocket`, {
             method: "POST",
@@ -157,23 +201,35 @@ export function CheckoutForm() {
           console.error("Shiprocket call failed", shipErr);
         }
 
+        const codId =
+          data.order?.id || data.order?.orderId || "COD_" + Date.now();
+
         setSuccessMsg(
           "Order placed! We will contact you soon for confirmation."
         );
-        purchaseComplete(data.order?.id || data.order?.orderId || "COD_" + Date.now(), items, finalPayable);
+        purchaseComplete(codId, items, finalPayable);
+
         fetch("/api/order-email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ order: data.order }), 
+          body: JSON.stringify({ order: data.order }),
         }).catch((err) => console.error("order-email failed", err));
-        router.push(
-          `/order-confirmation/${data.order?.id ?? data.order?.orderId ?? "COD_" + Date.now()}`
-        );
+        hasPlacedOrder.current = true;
+        // 🧹 Clear cart + checkout info
+        clearCart();
+        setCheckoutInfo(EMPTY_CHECKOUT);
+        try {
+          window.localStorage.removeItem(CHECKOUT_STORAGE_KEY);
+        } catch (err) {
+          console.error("Failed to clear checkout storage", err);
+        }
+
+        router.push(`/order-confirmation/${codId}`);
         return;
       }
 
-      // For Razorpay: create order on server using finalPayable (convert to paise)
-      const amountInPaise = Math.round(finalPayable * 100); // Razorpay expects paise
+      // ONLINE PAYMENT FLOW
+      const amountInPaise = Math.round(finalPayable * 100);
       const createRes = await fetch("/api/razorpay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -191,7 +247,6 @@ export function CheckoutForm() {
         order_id: createData.id,
         image: "/assets/logo.png",
         handler: async function (response: RazorpayResponse) {
-          // Save successful payment on server with finalPayable
           try {
             const saveRes = await fetch("/api/save-order", {
               method: "POST",
@@ -209,7 +264,6 @@ export function CheckoutForm() {
               throw new Error("Failed to save order after payment");
             const saveData = await saveRes.json();
 
-            // Shiprocket call
             try {
               await fetch(`/api/shiprocket`, {
                 method: "POST",
@@ -220,16 +274,28 @@ export function CheckoutForm() {
               console.error("Shiprocket call failed", shipErr);
             }
 
-            setSuccessMsg("Payment successful — redirecting..."); 
-            purchaseComplete(saveData.order?.id || saveData.order?.orderId || "", items, finalPayable);
+            const orderId =
+              saveData.order?.id || saveData.order?.orderId || "";
+
+            setSuccessMsg("Payment successful — redirecting...");
+            purchaseComplete(orderId, items, finalPayable);
+
             fetch("/api/order-email", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ order: saveData.order }),
             }).catch((err) => console.error("order-email failed", err));
-            router.push(
-              `/order-confirmation/${saveData.order?.id ?? saveData.order?.orderId ?? ""}`
-            );
+            hasPlacedOrder.current = true;
+            // 🧹 Clear cart + checkout info
+            clearCart();
+            setCheckoutInfo(EMPTY_CHECKOUT);
+            try {
+              window.localStorage.removeItem(CHECKOUT_STORAGE_KEY);
+            } catch (err) {
+              console.error("Failed to clear checkout storage", err);
+            }
+
+            router.push(`/order-confirmation/${orderId}`);
           } catch (saveErr: unknown) {
             console.error(saveErr);
             setErrorMessage(
@@ -243,48 +309,47 @@ export function CheckoutForm() {
           contact: checkoutInfo?.phoneNumber || "",
         },
         notes: {
-          address: `${checkoutInfo?.address || ""}, ${checkoutInfo?.city || ""} - ${checkoutInfo?.pincode || ""}`,
+          address: `${checkoutInfo?.address || ""}, ${
+            checkoutInfo?.city || ""
+          } - ${checkoutInfo?.pincode || ""}`,
         },
         theme: { color: "#9D7EDB" },
       };
 
-      // open Razorpay checkout - avoid using `any` by typing the global
       type RazorpayOptions = typeof options;
       type RazorpayInstance = { open: () => void };
       type RazorpayConstructor = new (opts: RazorpayOptions) => RazorpayInstance;
 
-      const RazorpayCtor = (window as unknown as { Razorpay?: RazorpayConstructor }).Razorpay;
+      const RazorpayCtor = (
+        window as unknown as { Razorpay?: RazorpayConstructor }
+      ).Razorpay;
       if (!RazorpayCtor) throw new Error("Razorpay SDK not loaded");
       const rzp = new RazorpayCtor(options);
       rzp.open();
     } catch (err: unknown) {
       console.error("place order error", err);
-      const message = err && typeof err === 'object' && 'message' in err && typeof (err as { message?: unknown }).message === 'string'
-        ? (err as { message?: string }).message
-        : null;
-      setErrorMessage(
-        message || "Something went wrong, please try again."
-      );
+      const message =
+        err &&
+        typeof err === "object" &&
+        "message" in err &&
+        typeof (err as { message?: unknown }).message === "string"
+          ? (err as { message?: string }).message
+          : null;
+      setErrorMessage(message || "Something went wrong, please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Input change handler using placeholder keys (keeps your existing store pattern)
+  // Input change handler
   const handleChangeInfo = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { placeholder, value } = e.target;
     const updatedInfo: CheckoutInfo = checkoutInfo
       ? { ...checkoutInfo }
-      : {
-          fullName: "",
-          phoneNumber: "",
-          email: "",
-          address: "",
-          city: "",
-          pincode: "",
-        };
+      : { ...EMPTY_CHECKOUT };
+
     if (placeholder === "Full Name") updatedInfo.fullName = value;
     if (placeholder === "Phone Number") updatedInfo.phoneNumber = value;
     if (placeholder === "Email Address") updatedInfo.email = value;
@@ -307,7 +372,9 @@ export function CheckoutForm() {
         </p>
         <div className="mt-2 w-full h-1 bg-neutral-light rounded-full">
           <div
-            className={`h-full bg-primary transition-all duration-500 ${step === "shipping" ? "w-1/2" : "w-full"}`}
+            className={`h-full bg-primary transition-all duration-500 ${
+              step === "shipping" ? "w-1/2" : "w-full"
+            }`}
             aria-hidden
           />
         </div>
@@ -332,17 +399,18 @@ export function CheckoutForm() {
             exit={{ opacity: 0, y: -10 }}
             className="bg-white rounded-2xl shadow-sm p-6"
           >
-            <h2 className="text-xl font-heading mb-4">Shipping Details
-               {errorMessage && (
-              <div
-                role="alert"
-                className="text-sm text-red-600 mb-2 rounded-md"
-              >
-                {errorMessage}
-              </div>
-            )}
+            <h2 className="text-xl font-heading mb-4">
+              Shipping Details
+              {errorMessage && (
+                <div
+                  role="alert"
+                  className="text-sm text-red-600 mb-2 rounded-md"
+                >
+                  {errorMessage}
+                </div>
+              )}
             </h2>
-            {/* Messages */}
+
             <div className="space-y-6 w-full">
               <label className="block">
                 <Input
@@ -516,7 +584,9 @@ export function CheckoutForm() {
                 return (
                   <label
                     key={method.value}
-                    className={`border p-3 rounded-xl cursor-pointer hover:border-primary transition flex items-center justify-between ${checked ? "ring-2 ring-primary/30 border-primary" : ""}`}
+                    className={`border p-3 rounded-xl cursor-pointer hover:border-primary transition flex items-center justify-between ${
+                      checked ? "ring-2 ring-primary/30 border-primary" : ""
+                    }`}
                   >
                     <div className="flex items-center gap-3">
                       <input
@@ -543,7 +613,6 @@ export function CheckoutForm() {
                       </div>
                     </div>
 
-                    {/* Save 2% hint for online */}
                     {method.value !== "cod" ? (
                       <div className="text-xs text-green-600">
                         Save 2% · Pay online
@@ -593,4 +662,4 @@ export function CheckoutForm() {
       </AnimatePresence>
     </div>
   );
-}
+}  

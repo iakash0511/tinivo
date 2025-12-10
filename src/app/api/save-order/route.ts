@@ -33,7 +33,6 @@ export async function POST(req: Request) {
         price: item.price,
       })),
     })
-    console.log("🌀 Triggering Shiprocket for order:", newOrder.orderId);
     // 🔁 Send this order to Shiprocket
     return NextResponse.json({ success: true, order: newOrder })
   } catch (error) {

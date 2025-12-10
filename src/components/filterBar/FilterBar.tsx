@@ -102,7 +102,10 @@ export default function FilterBar({
   const maxId = useId()
 
   return (
-    <div className="mb-6">
+    <div className="mb-6">     
+      <h1 className="text-3xl font-heading mb-6 text-center">
+        {isFiltered ? `Filtered Products` : `All Products ✨`}
+      </h1>
       {/* Top row: search + actions */}
       <div className="flex gap-3 items-center">
         <form onSubmit={onSubmit} className="flex-1 flex gap-3">

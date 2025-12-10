@@ -41,7 +41,7 @@ export default function OurStoryPage() {
           </div>
         </div>
 
-        <div className="relative w-full h-[320px] md:h-[420px] rounded-2xl overflow-hidden shadow-soft animate-fade-in">
+        <div className="relative w-full h-80 md:h-[420px] rounded-2xl overflow-hidden shadow-soft animate-fade-in">
           {/* Replace with an actual hero image in /public/images/our-story-hero.jpg */}
           <Image
             src="/images/our-story-hero.jpg"

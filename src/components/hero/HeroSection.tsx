@@ -6,6 +6,7 @@ import React from 'react'
 import { Button } from '../ui/button'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/store/cart/cart-store'
+import FeaturedCard from '../cart/FeaturedCard'
 
 export default function HeroSection({ featuredProducts = [] }: { featuredProducts?: Product[] }) {
   const addToCart = useCart((state) => state.addItem) as (item: Product & { quantity: number; giftWrap: boolean }) => void;
@@ -15,7 +16,8 @@ export default function HeroSection({ featuredProducts = [] }: { featuredProduct
     addToCart({ ...product, _id: product._id, quantity: 1, giftWrap: product?.giftWrap, image: product.image });
   };
 
-  const handleBuyNow = () => {
+  const handleBuyNow = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     handleAddToCart();
     router.push("/checkout");
   };
@@ -48,7 +50,7 @@ export default function HeroSection({ featuredProducts = [] }: { featuredProduct
         <div className="relative flex justify-center">
           <div className="w-[340px] h-[420px] rounded-3xl bg-white shadow-[0_20px_40px_rgba(157,126,219,0.12)] transform transition hover:scale-105 flex flex-col gap-1 items-center relative p-2">
             <Image src={featuredProducts[0]?.image || '/placeholders/panda.png'} alt={featuredProducts[0]?.name || 'Featured'} width={340} height={280} className="object-contain rounded-xl p-2" onClick={() => router.push(`/product/${featuredProducts?.[0]?.slug}`)} priority/>
-            <p className='absolute top-4 left-4 bg-primary text-white p-1 rounded-md text-xs italic'>Featured</p>
+            <p className='absolute top-4 left-4 bg-accent1 text-white p-1 rounded-md text-xs italic'>Featured</p>
              <p className="text-xl font-cta text-primary flex gap-2 items-center">
               <span className="text-gray-600 line-through">
                 ₹{product.compareAtPrice}
@@ -73,13 +75,7 @@ export default function HeroSection({ featuredProducts = [] }: { featuredProduct
         <h4 className="text-sm text-neutral-500 mb-3">Featured picks</h4>
         <div className="flex gap-4 overflow-x-auto pb-3">
           {featuredProducts.slice(0,4).map(p => (
-            <Link key={p._id} href={`/product/${p.slug}`} className="max-w-50 min-w-40 bg-white rounded-xl p-3 shadow-sm transform transition hover:scale-105">
-              <div className="w-full aspect-square rounded-lg overflow-hidden mb-2 bg-neutral-50">
-                <Image src={p.image} alt={p.name} width={200} height={200} className="object-cover" />
-              </div>
-              <div className="text-sm font-heading line-clamp-1">{p.name}</div>
-              <div className="text-primary font-cta font-semibold mt-1">₹{p.price}</div>
-            </Link>
+            <FeaturedCard key={p._id} p={p} handleBuyNow={handleBuyNow}/>
           ))}
         </div>
       </div>

@@ -22,7 +22,6 @@ async function getShiprocketToken() {
       password: SHIPROCKET_PASSWORD
     })
   })
-  console.log('Shiprocket auth response status:', res)
   if (!res.ok) {
     const text = await res.text()
     throw new Error(`Shiprocket auth failed: ${res.status} ${text}`)
@@ -42,7 +41,6 @@ async function getShiprocketToken() {
 }
 
 export async function GET(request: Request) {
-    console.log('>>> GET handler entered for /api/shippingrates', { url: request.url })
 
   try {
     const url = new URL(request.url)

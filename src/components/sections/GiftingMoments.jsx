@@ -17,7 +17,6 @@ export default function GiftingMoments() {
 
   const handleSubmit = () => {
     if (!userMoment.trim()) return;
-    console.log('User moment submitted:', userMoment); // Replace with analytics later
     setUserMoment('');
   };
 

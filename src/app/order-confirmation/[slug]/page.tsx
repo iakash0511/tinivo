@@ -1,4 +1,6 @@
 "use client"
+// disable eslint @typescript-eslint/no-unused-vars for this file
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { useEffect } from "react"
 import Link from "next/link"
@@ -6,15 +8,28 @@ import { Button } from "@/components/ui/button"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faCheckCircle } from "@fortawesome/free-solid-svg-icons"
 import confetti from "canvas-confetti"
-import { useCheckoutStore } from "@/store/checkout/checkout-store"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
+import { useCart } from "@/store/cart/cart-store"
+import { CheckoutInfo, useCheckoutStore } from "@/store/checkout/checkout-store"
 
 export default function OrderConfirmation() {
-  // Simulate user's name (later we can pull it from checkout data or Zustand store)
-  const { checkoutInfo } = useCheckoutStore()
   const params = useParams()
   const slug = params.slug as string
-  const userName = checkoutInfo?.fullName || "Customer"
+  const searchParams = useSearchParams();
+  const userName = searchParams.get("name") || "Customer";
+
+  const { clearCart } = useCart();
+
+  const { setCheckoutInfo } = useCheckoutStore();
+
+  const EMPTY_CHECKOUT: CheckoutInfo = {
+    fullName: "",
+    phoneNumber: "",
+    email: "",
+    address: "",
+    city: "",
+    pincode: "",
+  };
 
   useEffect(() => {
     // Confetti celebration burst
@@ -36,13 +51,19 @@ export default function OrderConfirmation() {
         origin: { x: 1 },
         colors: ["#9D7EDB", "#FFB7D5", "#A2D2FF"], 
       })
-      if (Date.now() < end) requestAnimationFrame(frame)
+      if (Date.now() < end) requestAnimationFrame(frame)  
+        clearCart();
+        setCheckoutInfo(EMPTY_CHECKOUT);
     }
     frame()
-  }, [])
+  }, [clearCart, setCheckoutInfo])
 
-  const orderId = slug
+  const orderId = slug;
 
+  const handleCopyOrderId = () => {
+    navigator.clipboard.writeText(orderId);
+    alert("Order ID copied to clipboard!");
+  }
   return (
     <main className="min-h-screen flex flex-col justify-center items-center px-6 py-12 text-center">
       <div className="bg-white rounded-3xl shadow-md p-8 max-w-md w-full space-y-6">
@@ -61,7 +82,7 @@ export default function OrderConfirmation() {
         </p>
 
         <div className="border-t border-neutral-light pt-4 space-y-1 text-sm">
-          <p><span className="font-semibold">Order ID:</span> #{orderId}</p>
+          <p onClick={handleCopyOrderId}><span className="font-semibold">Order ID:</span> <span className="underline text-primary">#{orderId}</span> (Click to copy)</p>
           <p><span className="font-semibold">Estimated Delivery:</span> 3–5 business days</p>
         </div>
 

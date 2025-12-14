@@ -6,7 +6,7 @@ export type ShippingOption = {
   estimated_days?: string | number;
   rate?: number;
   service_type?: string;
-  raw?: unknown;
+  raw?: {courier_company_id: string | number};
 };
 
 export type CheckoutInfo = {
@@ -16,6 +16,10 @@ export type CheckoutInfo = {
   address: string;
   city: string;
   pincode: string;
+};
+export type ShippingOptions = {
+  standard?: ShippingOption;
+  express?: ShippingOption;
 };
 
 export type PaymentMethod = "upi" | "card" | "cod";
@@ -29,6 +33,8 @@ type CheckoutStore = {
   setShippingOption: (o: ShippingOption | null) => void;
   shippingOption: ShippingOption | null;
   resetCheckout: () => void;
+  setShippingOptions: (opts: { standard?: ShippingOption; express?: ShippingOption }) => void;
+  shippingOptions?: ShippingOptions;
 };
 
 export const useCheckoutStore = create<CheckoutStore>((set) => ({
@@ -40,4 +46,5 @@ export const useCheckoutStore = create<CheckoutStore>((set) => ({
   resetCheckout: () => set({ checkoutInfo: null, paymentMethod: "upi" }),
   shippingOption: null,
   setShippingOption: (option) => set({ shippingOption: option }),
+  setShippingOptions: (options) => set({ shippingOptions: options })
 }));

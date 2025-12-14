@@ -40,18 +40,28 @@ async function getShiprocketToken() {
   return token
 }
 
-export async function GET(request: Request) {
+export async function POST(request: Request) {
 
   try {
-    const url = new URL(request.url)
-    const delivery_postcode = url.searchParams.get('delivery_postcode')
-    const weight = url.searchParams.get('weight') || '0.5' // kg
-    const cod = url.searchParams.get('cod') || '0'
-    const declared_value = url.searchParams.get('declared_value') || '0'
+    const body = await request.json()
 
-    if (!delivery_postcode) {
-      return NextResponse.json({ error: 'delivery_postcode is required' }, { status: 400 })
+    const {
+      delivery_postcode,
+      weight = 0.5,
+      length,
+      breadth,
+      height,
+      cod = 0,
+    } = body
+
+
+    if (!delivery_postcode || !length || !breadth || !height) {
+      return NextResponse.json(
+        { error: "Missing shipping parameters" },
+        { status: 400 }
+      )
     }
+
     if (!SHIPROCKET_EMAIL || !SHIPROCKET_PASSWORD || !SHIPROCKET_SOURCE_PINCODE) {
       return NextResponse.json({ error: 'Shiprocket credentials or source pincode not set on server' }, { status: 500 })
     }
@@ -61,17 +71,27 @@ export async function GET(request: Request) {
     console.log('Fetched Shiprocket token, proceeding to get rates', token)
 
     // Serviceability endpoint expects pickup and delivery pincode and weight
-    const serviceUrl = `https://apiv2.shiprocket.in/v1/external/courier/serviceability/?pickup_postcode=${encodeURIComponent(
-      SHIPROCKET_SOURCE_PINCODE
-    )}&delivery_postcode=${encodeURIComponent(delivery_postcode)}&weight=${encodeURIComponent(weight)}&cod=${encodeURIComponent(cod)}&declared_value=${encodeURIComponent(declared_value)}`
+    const serviceUrl =
+      "https://apiv2.shiprocket.in/v1/external/courier/serviceability/?" +
+      new URLSearchParams({
+        pickup_postcode: SHIPROCKET_SOURCE_PINCODE,
+        delivery_postcode,
+        weight: String(weight),
+        cod: String(cod),
+        length: String(length),
+        breadth: String(breadth),
+        height: String(height),
+      }).toString()
 
     const sres = await fetch(serviceUrl, {
-      method: 'GET',
+      method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: 'application/json'
-      }
+        Accept: "application/json",
+      },
     })
+
+
 
     if (!sres.ok) {
       const text = await sres.text()

@@ -64,6 +64,7 @@ export function useShipping(
   );
   const paymentMethod = useCheckoutStore((s) => s.paymentMethod);
   const setShippingOption = useCheckoutStore((s) => s.setShippingOption);
+  const setShippingOptions = useCheckoutStore((s) => s.setShippingOptions);
   const selected = useCheckoutStore((s) => s.shippingOption);
 
   // compute approximate weight from items (fallback to 0.5kg)
@@ -75,18 +76,36 @@ export function useShipping(
     );
     return w && w > 0 ? Number(w.toFixed(2)) : 0.5;
   }, [cartItems]);
+  const dimensions = useMemo(() => {
+  if (!cartItems.length) {
+    return { length: 10, breadth: 10, height: 5 }
+  }
+
+  return {
+    length: Math.max(...cartItems.map(i => i.length || 0)),
+    breadth: Math.max(...cartItems.map(i => i.breadth || 0)),
+    height: Math.max(...cartItems.map(i => i.height || 0)),
+  }
+}, [cartItems])
+
 
   // keep latest params in a ref so the stable debounced fn can read them
   const latestParamsRef = useRef({
+  weight,
+  paymentMethod,
+  subtotal,
+  dimensions
+})
+
+useEffect(() => {
+  latestParamsRef.current = {
     weight,
     paymentMethod,
     subtotal,
-  });
+    dimensions
+  }
+}, [weight, paymentMethod, subtotal, dimensions])
 
-  // update the ref whenever those values change
-  useEffect(() => {
-    latestParamsRef.current = { weight, paymentMethod, subtotal };
-  }, [weight, paymentMethod, subtotal]);
 
   // stable fetch function that reads current params from the ref
   const fetchOptions = async (pc: string) => {
@@ -101,17 +120,26 @@ export function useShipping(
     setError(null);
 
     try {
-      const { paymentMethod: pm, subtotal: declared_value, weight: w } =
-        latestParamsRef.current;
+      const { paymentMethod: pm, subtotal: declared_value, weight: w, dimensions } =
+  latestParamsRef.current;
       const cod = pm === "cod" ? "1" : "0";
       const declared = Math.round(declared_value || 0);
 
-      const res = await fetch(
-        `/api/shippingrates?delivery_postcode=${encodeURIComponent(
-          pc
-        )}&weight=${encodeURIComponent(String(w))}&cod=${cod}&declared_value=${declared}`,
-        { method: "GET", headers: { "Content-Type": "application/json" } }
-      );
+      const res = await fetch("/api/shippingrates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          delivery_postcode: pc,
+          weight: w,
+          length: dimensions.length,
+          breadth: dimensions.breadth,
+          height: dimensions.height,
+          cod,
+          declared,
+        }),
+      })
+
+
 
       if (!res.ok) {
         const txt = await res.json().catch(() => null) as unknown;
@@ -129,23 +157,35 @@ export function useShipping(
       setOptions(normalized);
 
       if (normalized.length > 0) {
-        const mapped = normalized.map((o) => {
-          const raw = o.raw as Record<string, unknown> | undefined;
-          const v = raw && 'etd_hours' in raw ? raw['etd_hours'] : undefined;
-          const etd = typeof v === 'number' ? v : (typeof v === 'string' && !Number.isNaN(Number(v)) ? Number(v) : undefined);
-          return { option: o, etd };
-        });
+        console.log(normalized, "fetched shipping options");
 
-        const fastestEntry = mapped
-          .filter((m) => typeof m.etd === 'number')
-          .sort((a, b) => (a.etd as number) - (b.etd as number))[0];
+        const standard = normalized
+          .sort((a, b) => (a.rate ?? 0) - (b.rate ?? 0))[0]
 
-        const fastest = fastestEntry ? fastestEntry.option : undefined;
+        const express = normalized
+          .map(o => {
+            const raw = o.raw as Record<string, unknown> | null;
+            const etdHours = raw && 'etd_hours' in raw ? raw['etd_hours'] : undefined;
+            const estimatedDelivery = raw && 'estimated_delivery_days' in raw ? raw['estimated_delivery_days'] : undefined;
+            const etd = typeof etdHours === "number"
+              ? etdHours
+              : (typeof estimatedDelivery === "number" || typeof estimatedDelivery === "string")
+                ? Number(estimatedDelivery) * 24
+                : Infinity;
 
-        if (fastest && (!selected || fastest.rate !== selected.rate)) {
-          setShippingOption(fastest);
-        }
+            return {
+              option: o,
+              etd,
+            };
+          })
+          .sort((a, b) => a.etd - b.etd)[0]?.option
+
+          setShippingOptions({
+            standard,
+            express
+          })
       } else {
+        setShippingOptions({});
         setShippingOption(null);
       }
     } catch (err: unknown) {

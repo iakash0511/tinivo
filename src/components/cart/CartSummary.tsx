@@ -25,7 +25,7 @@ export default function CartSummary() {
       </div>
       <div className="flex justify-between text-sm text-neutral-700">
         <span>Shipping</span>
-        <span className={`${(shipping || finalPayable < 999) ? 'text-accent1' : 'text-green-600'}`}>{shipping ? shipping : finalPayable > 999 ? 'Free': 'Enter Pincode'}</span>
+        <span className={`${(shipping || finalPayable < 999) ? 'text-accent1' : 'text-green-600'}`}>{shipping ? shipping : finalPayable > 999 ? 'Free': 'Choose Shipping'}</span>
       </div>
       {giftWrapTotal > 0 && (
         <div className="flex justify-between text-sm text-neutral-700">

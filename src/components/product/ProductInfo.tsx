@@ -82,6 +82,21 @@ export default function ProductInfo({ product }: { product: Product }) {
           </Button>
         </div>
       )}
+      <p className="mt-2 text-xs font-body text-neutral-dark/80">
+        ✨ Packed with care & a thank-you note —{' '}
+        <button
+          type="button"
+          onClick={() =>
+            document
+              .getElementById('order-packing')
+              ?.scrollIntoView({ behavior: 'smooth' })
+          }
+          className="underline underline-offset-2"
+        >
+          see how your Tinivo order reaches you
+        </button>
+      </p>
+
     </div>
   );
 }

@@ -15,6 +15,10 @@ export type CartItem = {
   compareAtPrice?: number;
   category?: string;
   tags?: string;
+  weight: number
+  length: number
+  breadth: number
+  height: number
 };
 
 type CartStore = {

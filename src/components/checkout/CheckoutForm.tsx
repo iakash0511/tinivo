@@ -1,22 +1,23 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faLock,
   faCheckCircle,
   faArrowLeft,
-  faMoneyBill,
   faCreditCard,
   faMobileAlt,
+  faPlaneDeparture,
+  faTruck,
 } from "@fortawesome/free-solid-svg-icons";
 import { useCart } from "@/store/cart/cart-store";
 import { useCheckoutStore } from "@/store/checkout/checkout-store";
-import type { CheckoutInfo } from "@/store/checkout/checkout-store";
+import type { CheckoutInfo, ShippingOption } from "@/store/checkout/checkout-store";
 import { useCartTotal } from "@/hooks/useCartTotal";
 import { useShipping } from "@/hooks/useShipping";
 import { Textarea } from "../ui/textarea";
@@ -43,34 +44,39 @@ export function CheckoutForm() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const router = useRouter();
-  const { items, clearCart } = useCart();
+  const { items } = useCart();
   const { subtotal, finalPayable } = useCartTotal();
   const { checkoutInfo, setCheckoutInfo, paymentMethod, setPaymentMethod } =
     useCheckoutStore();
   const pincode = checkoutInfo?.pincode;
+  const shippingOptions = useCheckoutStore((state) => state.shippingOptions);
+  const setShippingOption = useCheckoutStore((state) => state.setShippingOption);
+  const shippingOption = useCheckoutStore((state) => state.shippingOption);
 
   const { isLoading } = useShipping(pincode);
 
-  const hasPlacedOrder = useRef(false);
+  const pathname = usePathname();
+
 
   // Redirect if cart is empty + load Razorpay script
-    useEffect(() => {
-    // if order is placed, don't run empty-cart redirect logic
-    if (hasPlacedOrder.current) return;
+  useEffect(() => {
+  if (pathname !== "/checkout") return;
+  if (!items || items.length === 0) {
+    router.replace("/");
+  }
+}, [items, pathname, router]);
 
-    if (!items || items.length === 0) {
-      router.push("/");
-    }
 
-    const existing = document.querySelector("script[data-razorpay]");
-    if (!existing) {
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.async = true;
-      script.setAttribute("data-razorpay", "1");
-      document.body.appendChild(script);
-    }
-  });
+useEffect(() => {
+  const existing = document.querySelector("script[data-razorpay]");
+  if (!existing) {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.setAttribute("data-razorpay", "1");
+    document.body.appendChild(script);
+  }
+}, []);
 
 
   // 🧠 Load checkout info from localStorage on mount
@@ -102,7 +108,6 @@ export function CheckoutForm() {
   const paymentOptions = [
     { label: "UPI / GPay / Paytm", value: "upi", icon: faMobileAlt },
     { label: "Credit / Debit Card", value: "card", icon: faCreditCard },
-    { label: "Cash on Delivery", value: "cod", icon: faMoneyBill },
   ] as const;
 
   // --- Validation rules ---
@@ -213,10 +218,7 @@ export function CheckoutForm() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ order: data.order }),
         }).catch((err) => console.error("order-email failed", err));
-        hasPlacedOrder.current = true;
         // 🧹 Clear cart + checkout info
-        clearCart();
-        setCheckoutInfo(EMPTY_CHECKOUT);
         try {
           window.localStorage.removeItem(CHECKOUT_STORAGE_KEY);
         } catch (err) {
@@ -284,17 +286,14 @@ export function CheckoutForm() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ order: saveData.order }),
             }).catch((err) => console.error("order-email failed", err));
-            hasPlacedOrder.current = true;
             // 🧹 Clear cart + checkout info
-            clearCart();
-            setCheckoutInfo(EMPTY_CHECKOUT);
+            const name = checkoutInfo?.fullName || "Customer";
+            router.replace(`/order-confirmation/${orderId}?name=${encodeURIComponent(name)}`);
             try {
               window.localStorage.removeItem(CHECKOUT_STORAGE_KEY);
             } catch (err) {
               console.error("Failed to clear checkout storage", err);
             }
-
-            router.push(`/order-confirmation/${orderId}`);
           } catch (saveErr: unknown) {
             console.error(saveErr);
             setErrorMessage(
@@ -361,6 +360,9 @@ export function CheckoutForm() {
 
   const onBlurField = (field: string) =>
     setTouched((prev) => ({ ...prev, [field]: true }));
+
+  const isSelected = (opt?: ShippingOption | null) =>
+  shippingOption?.raw?.courier_company_id === opt?.raw?.courier_company_id
 
   return (
     <div className="space-y-8">
@@ -552,6 +554,7 @@ export function CheckoutForm() {
       {/* Step 2: Payment */}
       <AnimatePresence mode="wait">
         {step === "payment" && (
+          <>
           <motion.div
             key="payment"
             initial={{ opacity: 0, y: 10 }}
@@ -561,7 +564,7 @@ export function CheckoutForm() {
             role="region"
             aria-labelledby="payment-heading"
           >
-            <h2 id="payment-heading" className="text-xl font-heading mb-4">
+            <h2 id="payment-heading" className="text-xl font-heading mb-4 items-center">
               <button
                 onClick={() => setStep("shipping")}
                 className="mr-3 inline-flex items-center gap-2 text-neutral-700 hover:text-neutral-900"
@@ -570,7 +573,9 @@ export function CheckoutForm() {
                 <FontAwesomeIcon icon={faArrowLeft} />
                 Back
               </button>
-              Payment Method
+              <span>
+               Payment Method
+              </span>
             </h2>
 
             <div
@@ -603,34 +608,95 @@ export function CheckoutForm() {
                         />
                         <div>
                           <div className="font-medium">{method.label}</div>
-                          {method.value !== "cod" && (
+                          <FontAwesomeIcon
+                          icon={method.icon}
+                          className="w-4 h-4"
+                        />
                             <div className="text-xs text-neutral-500">
                               Fast & secure
                             </div>
-                          )}
                         </div>
                       </div>
                     </div>
-
-                    {method.value !== "cod" ? (
                       <div className="text-xs text-green-600">
                         Save 2% · Pay online
                       </div>
-                    ) : (
-                      <div className="text-xs text-neutral-500">
-                        Pay at delivery
-                      </div>
-                    )}
                   </label>
                 );
               })}
             </div>
 
+            <motion.div
+            key="payment"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-white rounded-2xl shadow-sm p-2 mt-4"
+            role="region"
+            aria-labelledby="payment-heading"
+          >
+            {shippingOptions && (
+                <div className="flex flex-col gap-3">
+                <h3 className="font-heading text-sm font-bold">How soon you need your Joy?</h3>
+
+              {shippingOptions.standard && (
+                <label className={`flex gap-3 border p-3 rounded-xl cursor-pointer
+                  ${isSelected(shippingOptions.standard) ? "ring-2 ring-primary/30 border-primary" : ""}`}
+                >
+                  <input
+                    type="radio"
+                    name="shipping"
+                    checked={shippingOptions.standard && isSelected(shippingOptions.standard)}
+                    onChange={() => setShippingOption(shippingOptions.standard ?? null)}
+                    className="accent-primary"
+                  />
+
+                  <div className="flex items-center gap-2">
+                    <FontAwesomeIcon icon={faTruck} className="w-4 h-4" />
+                    <span className="text-sm">
+                      Standard <span className="text-xs">(Est. delivery in {shippingOptions.standard.estimated_days} days)</span>
+                      <span className="block text-xs text-neutral-500">
+                        ₹{shippingOptions.standard.rate}
+                      </span>
+                    </span>
+                  </div>
+                  </label>
+                )}
+
+
+              {shippingOptions.express && (
+                <label className={`flex gap-3 border p-3 rounded-xl cursor-pointer
+                  ${isSelected(shippingOptions.express) ? "ring-2 ring-primary/30 border-primary" : ""}`}
+                >
+                  <input
+                    type="radio"
+                    name="shipping"
+                    checked={isSelected(shippingOptions.express)}
+                    onChange={() => setShippingOption(shippingOptions?.express ?? null)}
+                    className="accent-primary"
+                  />
+
+                  <div className="flex items-center gap-2">
+                    <FontAwesomeIcon icon={faPlaneDeparture} className="w-4 h-4" />
+                    <span className="text-sm">
+                      Express  <span className="text-xs">(Est. delivery in {shippingOptions.express.estimated_days} days)</span>
+                      <span className="block text-xs text-neutral-500">
+                        ₹{shippingOptions.express.rate}
+                      </span>
+                    </span>
+                  </div>
+                </label>
+              )}
+
+              </div>)
+            }
+            </motion.div>
+
             <div className="mt-6">
               <Button
                 onClick={handlePlaceOrder}
                 className="w-full font-cta text-white bg-accent1 hover:opacity-90"
-                disabled={loading}
+                disabled={loading || !shippingOption}
                 aria-disabled={loading}
               >
                 {loading
@@ -657,6 +723,7 @@ export function CheckoutForm() {
               </div>
             </div>
           </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>

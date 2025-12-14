@@ -608,19 +608,15 @@ useEffect(() => {
                         />
                         <div>
                           <div className="font-medium">{method.label}</div>
-                          <FontAwesomeIcon
-                          icon={method.icon}
-                          className="w-4 h-4"
-                        />
                             <div className="text-xs text-neutral-500">
                               Fast & secure
+                              <span className="text-xs text-green-600 ml-1">
+                               · Save 2% · Pay online
+                              </span>
                             </div>
                         </div>
                       </div>
                     </div>
-                      <div className="text-xs text-green-600">
-                        Save 2% · Pay online
-                      </div>
                   </label>
                 );
               })}

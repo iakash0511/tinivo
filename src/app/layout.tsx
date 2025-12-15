@@ -9,6 +9,7 @@ import { OrderToasts } from "@/components/OrderToast";
 import "@/lib/fontawesome";
 import { Analytics } from "@vercel/analytics/next";
 import Script from "next/script";
+import MetaPixel from "@/components/analytics/MetaPixel";
 
 const poppins = Poppins({ subsets: ["latin"], weight: "700", variable: "--font-logo" });
 const raleway = Raleway({ subsets: ["latin"], variable: "--font-heading" });
@@ -41,6 +42,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}', { send_page_view: true });
           `}
         </Script>
+
+        {/* Meta Pixel - place inside body */}
+        <MetaPixel />
+
 
         <Header />
         <BannerComponent />

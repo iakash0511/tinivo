@@ -6,6 +6,7 @@ declare global {
   interface Window {
     dataLayer: Record<string, unknown>[];
     gtag?: (...args: unknown[]) => void;
+    fbq?: (...args: unknown[]) => void;
   }
 }
 
@@ -39,6 +40,17 @@ function safePush(eventObj: EcommerceEvent) {
   }
 }
 
+function safeMeta(event: string, payload: Record<string, unknown>) {
+  try {
+    if (typeof window.fbq === "function") {
+      window.fbq("track", event, payload);
+    }
+  } catch (err) {
+    console.warn("Meta event failed", err);
+  }
+}
+
+
 /** -------------------------------
  *  ADD TO CART
  *  -----------------------------*/
@@ -60,6 +72,14 @@ export function pushAddToCart(product: CartItem, quantity = 1) {
       ]
     }
   });
+
+  // Meta
+  safeMeta("AddToCart", {
+    content_ids: [product._id],
+    content_name: product.name,
+    value: product.price * quantity,
+    currency: "INR",
+  });
 }
 
 /** -------------------------------
@@ -80,6 +100,14 @@ export function purchaseComplete(transactionId: string, products: CartItem[], to
       }))
     }
   });
+  
+   // Meta
+  safeMeta("Purchase", {
+    content_ids: products.map(p => p._id),
+    value: totalValue,
+    currency: "INR",
+    num_items: products.length,
+  });
 }
 
 /** -------------------------------
@@ -99,5 +127,13 @@ export function pushViewItem(product: Product) {
         }
       ]
     }
+  });
+
+  // Meta
+  safeMeta("ViewContent", {
+    content_ids: [product._id],
+    content_name: product.name,
+    value: product.price,
+    currency: "INR",
   });
 }

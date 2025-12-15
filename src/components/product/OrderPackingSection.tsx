@@ -72,8 +72,10 @@ export default function OrderPackingSection({
             <Image
               src={posterUrl}
               alt="Tinivo order packing preview"
+              fill
+              sizes="(max-width: 768px) 90vw, 720px"
               loading="lazy"
-              className="absolute inset-0 h-full w-full object-cover"
+              className="object-cover"
             />
 
             <span className="absolute inset-0 flex items-center justify-center">

@@ -265,7 +265,26 @@ useEffect(() => {
               throw new Error("Failed to save order after payment");
             const saveData = await saveRes.json();
 
+            const orderId =
+              saveData.order?.id || saveData.order?.orderId || "";
+
+            setSuccessMsg("Payment successful — redirecting...");
+            purchaseComplete(orderId, items, finalPayable);
+            
+            const name = checkoutInfo?.fullName || "Customer";
+            router.replace(`/order-confirmation/${orderId}?name=${encodeURIComponent(name)}`);
+
+            fetch("/api/order-email", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ order: saveData.order }),
+            }).catch((err) => console.error("order-email failed", err));
             try {
+              window.localStorage.removeItem(CHECKOUT_STORAGE_KEY);
+            } catch (err) {
+              console.error("Failed to clear checkout storage", err);
+            }
+             try {
               await fetch(`/api/shiprocket`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -273,26 +292,6 @@ useEffect(() => {
               });
             } catch (shipErr) {
               console.error("Shiprocket call failed", shipErr);
-            }
-
-            const orderId =
-              saveData.order?.id || saveData.order?.orderId || "";
-
-            setSuccessMsg("Payment successful — redirecting...");
-            purchaseComplete(orderId, items, finalPayable);
-
-            fetch("/api/order-email", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ order: saveData.order }),
-            }).catch((err) => console.error("order-email failed", err));
-            // 🧹 Clear cart + checkout info
-            const name = checkoutInfo?.fullName || "Customer";
-            router.replace(`/order-confirmation/${orderId}?name=${encodeURIComponent(name)}`);
-            try {
-              window.localStorage.removeItem(CHECKOUT_STORAGE_KEY);
-            } catch (err) {
-              console.error("Failed to clear checkout storage", err);
             }
           } catch (saveErr: unknown) {
             console.error(saveErr);
@@ -623,7 +622,7 @@ useEffect(() => {
             </div>
 
             <motion.div
-            key="payment"
+            key="shipping-options"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}

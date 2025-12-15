@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faCheckCircle } from "@fortawesome/free-solid-svg-icons"
 import confetti from "canvas-confetti"
-import { useParams, useSearchParams } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { useCart } from "@/store/cart/cart-store"
 import { CheckoutInfo, useCheckoutStore } from "@/store/checkout/checkout-store"
 
@@ -20,8 +20,10 @@ export default function OrderConfirmation() {
 
   const { clearCart } = useCart();
 
-  const { setCheckoutInfo } = useCheckoutStore();
+  const { setCheckoutInfo, checkoutInfo } = useCheckoutStore();
+  const setShippingOption = useCheckoutStore((state) => state.setShippingOption);
 
+  const router = useRouter();
   const EMPTY_CHECKOUT: CheckoutInfo = {
     fullName: "",
     phoneNumber: "",
@@ -32,6 +34,10 @@ export default function OrderConfirmation() {
   };
 
   useEffect(() => {
+    if (!checkoutInfo || Object.values(checkoutInfo).length === 0) {
+      router.push('/');
+      return
+    };
     // Confetti celebration burst
     const duration = 2 * 1000
     const end = Date.now() + duration
@@ -54,6 +60,7 @@ export default function OrderConfirmation() {
       if (Date.now() < end) requestAnimationFrame(frame)  
         clearCart();
         setCheckoutInfo(EMPTY_CHECKOUT);
+        setShippingOption(null);
     }
     frame()
   }, [clearCart, setCheckoutInfo])

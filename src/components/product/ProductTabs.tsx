@@ -27,7 +27,7 @@ export default function ProductTabs({
             onClick={() => setActive(tab.key)}
             className={`pb-2 font-heading text-sm ${
               active === tab.key
-                ? "text-[var(--color-primary)] border-b-2 border-[var(--color-primary)]"
+                ? "text-primary border-b-2 border-primary"
                 : "text-neutral-600"
             }`}
           >

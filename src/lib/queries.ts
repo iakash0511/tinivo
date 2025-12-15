@@ -12,6 +12,10 @@ export const productBySlugQuery = `
     compareAtPrice,
     quantity,
     tags,
+    weight,
+    length,
+    breadth,
+    height,
   }
 `
 export const getBestSellers = `
@@ -25,6 +29,10 @@ export const getBestSellers = `
     "image": images[0].asset->url,
     description,
     tags,
+    weight,
+    length,
+    breadth,
+    height,
   }
 `
 
@@ -39,6 +47,10 @@ export const getFeaturedProducts = `
     "image": images[0].asset->url,
     description,
     tags,
+    weight,
+    length,
+    breadth,
+    height,
   }
 `
 

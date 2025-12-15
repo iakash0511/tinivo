@@ -18,6 +18,10 @@ export interface Product {
   quantity: number;
   giftWrap: boolean;
   compareAtPrice?: number;
+  weight: number;
+  length: number;
+  breadth: number;
+  height: number;
 }
 
 export interface ProductPage {

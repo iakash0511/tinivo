@@ -37,7 +37,7 @@ export default function CheckoutSummary({ isMobile }: { isMobile?: boolean } = {
         </div>
         <div className="flex justify-between">
           <span>Shipping</span>
-          <span className={`font-medium ${(shipping || finalPayable < 999) ? 'text-accent1' : 'text-green-600'}`}>{shipping ? fmt(shipping) : finalPayable > 999 ? 'Free': 'Enter Pincode'}</span>
+          <span className={`font-medium ${(shipping || finalPayable < 999) ? 'text-accent1' : 'text-green-600'}`}>{shipping ? fmt(shipping) : finalPayable > 999 ? 'Free': 'Choose Shipping'}</span>
         </div>
         <div className="flex justify-between">
           <span>You Saved</span>

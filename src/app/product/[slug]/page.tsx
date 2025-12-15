@@ -6,6 +6,7 @@ import ProductTabs from "@/components/product/ProductTabs"
 import { notFound } from "next/navigation"
 import { getSanityClient } from "@/lib/getSanityClient"
 import ViewItemClient from "@/components/analytics/ViewItemClient"
+import OrderPackingSection from "@/components/product/OrderPackingSection"
 
 export const revalidate = 60 // Next will revalidate this page every 60s (ISR)
 
@@ -46,6 +47,11 @@ export default async function ProductPage({ params }: { params?: Promise<{ slug:
         <ProductGallery images={product.images || []} />
         <div className="flex flex-col gap-8">
           <ProductInfo product={product} />
+          <OrderPackingSection
+            videoMp4Url={"https://res.cloudinary.com/dltpeh88i/video/upload/q_auto:eco,f_mp4,w_720,vc_auto/tinivo/packing/tinivo-packing/"+slug+".mp4"}
+            videoWebmUrl={"https://res.cloudinary.com/dltpeh88i/video/upload/q_auto:eco,f_webm,w_720,vc_auto/tinivo/packing/tinivo-packing/"+slug+".webm"}
+            posterUrl={"https://res.cloudinary.com/dltpeh88i/video/upload/so_0,f_jpg,q_auto,w_720/tinivo/packing/tinivo-packing/"+slug+".jpg"}
+          />
           <ProductTabs description={product.description} shipping={product.shipping} care={product.care} />
         </div>
       </div>

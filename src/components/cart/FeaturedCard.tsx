@@ -4,7 +4,7 @@ import React from 'react'
 import { Button } from '../ui/button';
 import { Product } from '@/interface/ProductInterface';
 
-function FeaturedCard({p, handleBuyNow}: {p: Product, handleBuyNow: (e:React.MouseEvent<HTMLButtonElement>) => void}) {
+function FeaturedCard({p, handleBuyNow}: {p: Product, handleBuyNow: (e:React.MouseEvent<HTMLButtonElement>, p: Product) => void}) {
   return (
     <Link prefetch={false} key={p._id} href={`/product/${p.slug}`} className="max-w-50 min-w-40 bg-white rounded-xl p-3 shadow-sm transform transition hover:scale-105">
         <div className="w-full aspect-square rounded-lg overflow-hidden mb-2 bg-neutral-50 relative">
@@ -18,7 +18,7 @@ function FeaturedCard({p, handleBuyNow}: {p: Product, handleBuyNow: (e:React.Mou
             </span>₹{p.price}
         </div>
          <Button
-            onClick={handleBuyNow}
+            onClick={(e) => handleBuyNow(e, p)}
             className="bg-primary text-white hover:opacity-90 w-full font-cta"
           >
             Buy Now

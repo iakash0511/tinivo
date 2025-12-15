@@ -12,13 +12,13 @@ export default function HeroSection({ featuredProducts = [] }: { featuredProduct
   const addToCart = useCart((state) => state.addItem) as (item: Product & { quantity: number; giftWrap: boolean }) => void;
   const router = useRouter();
   const product = featuredProducts[0];
-  const handleAddToCart = () => {
-    addToCart({ ...product, _id: product._id, quantity: 1, giftWrap: product?.giftWrap, image: product.image });
+  const handleAddToCart = (p: Product) => {
+    addToCart({ ...p, _id: p._id, quantity: 1, giftWrap: p?.giftWrap, image: p.image });
   };
 
-  const handleBuyNow = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleBuyNow = (e: React.MouseEvent<HTMLButtonElement>, p: Product) => {
     e.preventDefault();
-    handleAddToCart();
+    handleAddToCart(p);
     router.push("/checkout");
   };
   return (
@@ -58,7 +58,7 @@ export default function HeroSection({ featuredProducts = [] }: { featuredProduct
               ₹{product.price}
             </p>
             <Button
-            onClick={handleBuyNow}
+            onClick={(e) => handleBuyNow(e, product)}
             className="bg-primary text-white hover:opacity-90 w-full font-cta"
           >
             Buy Now 💜

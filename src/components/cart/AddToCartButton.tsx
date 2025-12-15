@@ -21,14 +21,18 @@ export default function AddToCartButton({ item, quantity, isDisabled }: { item: 
       updateQuantity(item._id, currentQuantity + (quantity ? quantity : 1));
       return;
     }
-    addItem({   
-        _id: item._id,
-        name: item.name,
-        price: item.price,
-        quantity: quantity ? quantity : 1,
-        image: item.image,
-        giftWrap: false,
-        compareAtPrice: item.compareAtPrice,
+    addItem({
+      _id: item._id,
+      name: item.name,
+      price: item.price,
+      quantity: quantity ? quantity : 1,
+      image: item.image,
+      giftWrap: false,
+      compareAtPrice: item.compareAtPrice,
+      weight: 0,
+      length: 0,
+      breadth: 0,
+      height: 0
     });
     toast.success(`${item.name} added to cart!`, {position: "bottom-right"});
   }

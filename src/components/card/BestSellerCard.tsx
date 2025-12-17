@@ -43,14 +43,14 @@ export default function BestsellerCard({ item, id }: { item: BestSellerItem; id:
             {item.tag}
           </div>
         )}
-        <h3 className="font-heading text-base text-neutral-dark mb-1 hover:underline">
+        <h3 className="font-heading text-base text-neutral-dark mb-1 hover:underline line-clamp-1">
           {item.name}
         </h3>
       </Link>
 
-      <p className={`text-sm text-neutral-dark/70 mb-2 line-clamp-2 text-ellipsis ${contentEffect}`}>
+      {/* <p className={`text-sm text-neutral-dark/70 mb-2 line-clamp-2 text-ellipsis ${contentEffect}`}>
         {item.description}
-      </p>
+      </p> */}
 
       <p className={`font-cta font-semibold text-primary text-lg mb-3 flex gap-2 ${contentEffect}`}>
         <span className="text-gray-600 line-through">₹{item.compareAtPrice}</span>₹{item.price}

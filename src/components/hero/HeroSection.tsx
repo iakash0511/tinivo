@@ -31,7 +31,7 @@ export default function HeroSection({ featuredProducts = [] }: { featuredProduct
             <span className='text-xl lg:text-3xl lowercase italic text-shadow-lg'>Small</span> <span className='text-shadow-lg'>things.</span><br /> 
             <span className="text-primary font-semibold text-shadow-sm"><span className='text-5xl lg:text-8xl'>Big</span> joy.</span>
           </h1>
-          <Link href="/our-story" className="text-md lg:text-xl px-4 py-2 rounded-lg bg-primary text-white">Why Tinivo?🤔</Link>
+          <Link href="/our-story" className="text-md lg:text-xl px-4 py-2 rounded-lg bg-primary text-white">Why Tinivo?✨</Link>
           {/* <Image src={'/assets/hero/hero-section.png'} alt={featuredProducts[0]?.name || 'Featured'} width={150} height={280} className="object-cover rounded-xl p-2" onClick={() => router.push(`/product/${featuredProducts?.[0]?.slug}`)}/> */}
           </div>
           <p className="text-base md:text-lg font-body text-neutral-600 max-w-xl">
@@ -41,7 +41,7 @@ export default function HeroSection({ featuredProducts = [] }: { featuredProduct
           <div className="flex gap-2 items-center">
             <span className='text-md font-medium text-wrap italic'>Loved by 2,000+ cute-find lovers 💕</span>
              <Link href="/shop" className="inline-flex items-center text-nowrap gap-3 p-3 rounded-2xl font-cta text-white bg-linear-to-r from-primary to-accent1 shadow-lg shadow-accent1 transform transition hover:-translate-y-0.5 active:translate-y-0.5">
-              Discover mini joys✨
+              Discover mini joys💜
             </Link>
           </div>
         </div>

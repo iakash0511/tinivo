@@ -35,6 +35,41 @@ export const getBestSellers = `
     height,
   }
 `
+export const getProductsUnderAmount = `
+  *[_type == "product" && price <= $amount] | order(_createdAt desc)[0..8] {
+    _id,
+    name,
+    price,
+    "slug": slug.current,
+    compareAtPrice,
+    quantity,
+    "image": images[0].asset->url,
+    description,
+    tags,
+    weight,
+    length,
+    breadth,
+    height,
+  }
+`
+
+export const getCombos = `
+  *[_type == "product" && category == "combo"] | order(_createdAt desc)[0..4] {
+    _id,
+    name,
+    price,
+    "slug": slug.current,
+    compareAtPrice,
+    quantity,
+    "image": images[0].asset->url,
+    description,
+    tags,
+    weight,
+    length,
+    breadth,
+    height,
+  }
+`
 
 export const getFeaturedProducts = `
     *[_type == "product" && isFeatured == true] | order(_createdAt desc)[0..4] {

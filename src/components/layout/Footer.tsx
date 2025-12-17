@@ -69,6 +69,7 @@ export default function Footer() {
 
       {/* Bottom Note */}
       <div className="border-t border-neutral-light mt-8 pt-6 text-center text-sm font-body text-neutral-500">
+        <p>We pack with care. You pay securely. We deliver safely.</p>
         <p>© {new Date().getFullYear()} Tinivo. All Rights Reserved.</p>
       </div>
     </footer>

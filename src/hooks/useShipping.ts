@@ -157,7 +157,6 @@ useEffect(() => {
       setOptions(normalized);
 
       if (normalized.length > 0) {
-        console.log(normalized, "fetched shipping options");
 
         const standard = normalized
           .sort((a, b) => (a.rate ?? 0) - (b.rate ?? 0))[0]

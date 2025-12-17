@@ -21,6 +21,8 @@ export default function Header() {
   const sections = [
     { name: 'Home', href: '/', show: true },
     { name: 'All Products', href: '/shop', show: true },
+    { name: 'Shop under ₹499', href: '/shop?max=499', show: pathname === '/'},
+    { name: 'Combos', href: '/shop?category=combo', show: pathname === '/' },
     { name: 'Bestsellers', href: '#bestsellers', show: pathname === '/' },
     { name: 'Our Story', href: '/our-story', show: true },
     { name: 'Track Order', href: '/orders', show: true },

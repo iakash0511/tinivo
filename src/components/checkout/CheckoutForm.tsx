@@ -14,6 +14,7 @@ import {
   faMobileAlt,
   faPlaneDeparture,
   faTruck,
+  faCashRegister,
 } from "@fortawesome/free-solid-svg-icons";
 import { useCart } from "@/store/cart/cart-store";
 import { useCheckoutStore } from "@/store/checkout/checkout-store";
@@ -22,6 +23,7 @@ import { useCartTotal } from "@/hooks/useCartTotal";
 import { useShipping } from "@/hooks/useShipping";
 import { Textarea } from "../ui/textarea";
 import { purchaseComplete } from "@/lib/analyticsPush";
+import { COD_PREPAID_AMOUNT } from "@/constants/payment";
 
 type Step = "shipping" | "payment";
 
@@ -52,6 +54,12 @@ export function CheckoutForm() {
   const shippingOptions = useCheckoutStore((state) => state.shippingOptions);
   const setShippingOption = useCheckoutStore((state) => state.setShippingOption);
   const shippingOption = useCheckoutStore((state) => state.shippingOption);
+  const codPrepaidAccepted = useCheckoutStore(
+    (s) => s.codPrepaidAccepted
+  );
+  const setCodPrepaidAccepted = useCheckoutStore(
+    (s) => s.setCodPrepaidAccepted
+  );
 
   const { isLoading } = useShipping(pincode);
 
@@ -76,7 +84,9 @@ useEffect(() => {
     script.setAttribute("data-razorpay", "1");
     document.body.appendChild(script);
   }
-}, []);
+  setShippingOption({ express: false, standard: false });
+  setCodPrepaidAccepted(false);
+}, [setShippingOption, setCodPrepaidAccepted]);
 
 
   // 🧠 Load checkout info from localStorage on mount
@@ -108,6 +118,7 @@ useEffect(() => {
   const paymentOptions = [
     { label: "UPI / GPay / Paytm", value: "upi", icon: faMobileAlt },
     { label: "Credit / Debit Card", value: "card", icon: faCreditCard },
+    { label: "Split COD", value: "cod", icon: faCashRegister },
   ] as const;
 
   // --- Validation rules ---
@@ -176,58 +187,111 @@ useEffect(() => {
     try {
       // COD FLOW
       if (paymentMethod === "cod") {
-        const res = await fetch("/api/save-order", {
+        if (!codPrepaidAccepted) {
+          setErrorMessage("Please accept the COD terms to continue.");
+          return;
+        }
+
+        const prepaidAmount = COD_PREPAID_AMOUNT;
+        const codAmount = finalPayable - prepaidAmount;
+        const payableOnDelivery = finalPayable - prepaidAmount
+
+        if (codAmount <= 0) {
+          setErrorMessage("Invalid COD calculation.");
+          return;
+        }
+
+        // Create Razorpay order for ₹150
+        const createRes = await fetch("/api/razorpay", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            paymentResponse: {
-              razorpay_order_id: "COD_" + Date.now(),
-              razorpay_payment_id: "COD_PAYMENT",
-              razorpay_signature: "COD_SIGNATURE",
-            },
-            cartItems: items,
-            totalAmount: finalPayable,
-            subtotal,
-            checkoutInfo,
-            paymentMethod: "cod",
+            amount: prepaidAmount * 100,
           }),
         });
-        if (!res.ok) throw new Error("Failed to save COD order");
-        const data = await res.json();
 
-        try {
-          await fetch(`/api/shiprocket`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ order: data.order }),
-          });
-        } catch (shipErr) {
-          console.error("Shiprocket call failed", shipErr);
-        }
+        if (!createRes.ok) throw new Error("Failed to create prepaid COD payment");
 
-        const codId =
-          data.order?.id || data.order?.orderId || "COD_" + Date.now();
+        const createData = await createRes.json();
 
-        setSuccessMsg(
-          "Order placed! We will contact you soon for confirmation."
-        );
-        purchaseComplete(codId, items, finalPayable);
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+          amount: createData.amount,
+          currency: "INR",
+          name: "Tinivo",
+          description: "COD Confirmation Amount",
+          order_id: createData.id,
 
-        fetch("/api/order-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ order: data.order }),
-        }).catch((err) => console.error("order-email failed", err));
-        // 🧹 Clear cart + checkout info
-        try {
-          window.localStorage.removeItem(CHECKOUT_STORAGE_KEY);
-        } catch (err) {
-          console.error("Failed to clear checkout storage", err);
-        }
+          handler: async (response: RazorpayResponse) => {
+            const saveRes = await fetch("/api/save-order", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                paymentResponse: response,
+                cartItems: items,
+                subtotal,
+                totalAmount: finalPayable,
+                prepaidAmount,
+                codAmount,
+                payableOnDelivery,
+                checkoutInfo,
+                paymentMethod: paymentMethod,
+              }),
+            });
 
-        router.push(`/order-confirmation/${codId}`);
+            if (!saveRes.ok) {
+              setErrorMessage("Payment done, but order failed. Contact support.");
+              return;
+            }
+
+            const saveData = await saveRes.json();
+
+            const orderId =
+              saveData.order?.id || saveData.order?.orderId || "";
+
+            setSuccessMsg("Payment successful — redirecting...");
+            purchaseComplete(orderId, items, prepaidAmount);
+            
+            const name = checkoutInfo?.fullName || "Customer";
+            router.replace(`/order-confirmation/${orderId}?name=${encodeURIComponent(name)}`);
+
+            fetch("/api/order-email", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ order: saveData.order }),
+            }).catch((err) => console.error("order-email failed", err));
+            try {
+              window.localStorage.removeItem(CHECKOUT_STORAGE_KEY);
+            } catch (err) {
+              console.error("Failed to clear checkout storage", err);
+            }
+             try {
+              await fetch(`/api/shiprocket`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ order: saveData.order }),
+              });
+            } catch (shipErr) {
+              console.error("Shiprocket call failed", shipErr);
+            }
+          },
+
+          prefill: {
+            name: checkoutInfo?.fullName,
+            email: checkoutInfo?.email,
+            contact: checkoutInfo?.phoneNumber,
+          },
+          theme: { color: "#9D7EDB" },
+        };
+
+        type RazorpayConstructorCOD = new (opts: Record<string, unknown>) => { open: () => void };
+        const RazorpayCtor = (window as unknown as { Razorpay?: RazorpayConstructorCOD }).Razorpay;
+        if (!RazorpayCtor) throw new Error("Razorpay SDK not loaded");
+        const rzp = new RazorpayCtor(options);
+        rzp.open();
         return;
       }
+
 
       // ONLINE PAYMENT FLOW
       const amountInPaise = Math.round(finalPayable * 100);
@@ -360,9 +424,7 @@ useEffect(() => {
   const onBlurField = (field: string) =>
     setTouched((prev) => ({ ...prev, [field]: true }));
 
-  const isSelected = (opt?: ShippingOption | null) =>
-  shippingOption?.raw?.courier_company_id === opt?.raw?.courier_company_id
-
+  
   return (
     <div className="space-y-8">
       {/* Progress Bar */}
@@ -538,6 +600,7 @@ useEffect(() => {
                   setErrorMessage("Please complete all required fields.");
                   return;
                 }
+                setShippingOption({express: false, standard: false});
                 setErrorMessage(null);
                 setStep("payment");
               }}
@@ -597,7 +660,10 @@ useEffect(() => {
                         name="payment"
                         aria-checked={checked}
                         checked={checked}
-                        onChange={() => setPaymentMethod(method.value)}
+                        onChange={() => {
+                          setPaymentMethod(method.value)
+                          setShippingOption({express: false, standard: false});
+                        }}
                         className="accent-primary"
                       />
                       <div className="flex items-center gap-2">
@@ -609,9 +675,11 @@ useEffect(() => {
                           <div className="font-medium">{method.label}</div>
                             <div className="text-xs text-neutral-500">
                               Fast & secure
-                              <span className="text-xs text-green-600 ml-1">
-                               · Save 2% · Pay online
-                              </span>
+                              {method.value !== 'cod' && (
+                                <span className="text-xs text-green-600 ml-1">
+                                 · Save 2% · Pay online
+                                </span>
+                              )}
                             </div>
                         </div>
                       </div>
@@ -636,14 +704,19 @@ useEffect(() => {
 
               {shippingOptions.standard && (
                 <label className={`flex gap-3 border p-3 rounded-xl cursor-pointer
-                  ${isSelected(shippingOptions.standard) ? "ring-2 ring-primary/30 border-primary" : ""}`}
+                  ${shippingOption?.standard ? "ring-2 ring-primary/30 border-primary" : ""}`}
                 >
                   <input
                     type="radio"
                     name="shipping"
-                    checked={shippingOptions.standard && isSelected(shippingOptions.standard)}
-                    onChange={() => setShippingOption(shippingOptions.standard ?? null)}
+                    checked={shippingOption?.standard}
+                    onChange={() => {
+                      let opt = shippingOptions?.standard;
+                      opt = {...opt, express: false, standard: true};
+                      setShippingOption(opt ?? null)
+                    }}
                     className="accent-primary"
+                    disabled={isLoading}
                   />
 
                   <div className="flex items-center gap-2">
@@ -661,14 +734,19 @@ useEffect(() => {
 
               {shippingOptions.express && (
                 <label className={`flex gap-3 border p-3 rounded-xl cursor-pointer
-                  ${isSelected(shippingOptions.express) ? "ring-2 ring-primary/30 border-primary" : ""}`}
+                  ${shippingOption?.express ? "ring-2 ring-primary/30 border-primary" : ""}`}
                 >
                   <input
                     type="radio"
                     name="shipping"
-                    checked={isSelected(shippingOptions.express)}
-                    onChange={() => setShippingOption(shippingOptions?.express ?? null)}
+                    checked={shippingOption?.express}
+                    onChange={() => {
+                      let opt = shippingOptions?.express;
+                      opt = {...opt, express: true, standard: false};
+                      setShippingOption(opt ?? null)
+                    }}
                     className="accent-primary"
+                    disabled={isLoading}
                   />
 
                   <div className="flex items-center gap-2">
@@ -688,15 +766,49 @@ useEffect(() => {
             </motion.div>
 
             <div className="mt-6">
+              {paymentMethod === "cod" && (
+                  <div className="my-4 p-4 rounded-xl bg-yellow-50 border border-yellow-300 text-sm text-yellow-900">
+                    <p className="font-semibold mb-2">
+                      ⚠️ Partial Prepaid Cash on Delivery
+                    </p>
+
+                    <ul className="list-disc pl-4 space-y-1">
+                      <li>₹150 must be paid now to confirm your order</li>
+                      <li>Remaining amount will be collected via Cash on Delivery</li>
+                      <li className="font-semibold">
+                        ₹150 is non-refundable once the order is dispatched
+                      </li>
+                    </ul>
+
+                    <label className="flex items-start gap-2 mt-3">
+                      <input
+                        type="checkbox"
+                        checked={codPrepaidAccepted}
+                        onChange={(e) => setCodPrepaidAccepted(e.target.checked)}
+                        className="accent-primary mt-1"
+                      />
+                      <span className="text-sm">
+                        I understand and agree to the partial prepaid COD terms
+                      </span>
+                    </label>
+                  </div>
+                )} 
               <Button
                 onClick={handlePlaceOrder}
                 className="w-full font-cta text-white bg-accent1 hover:opacity-90"
-                disabled={loading || !shippingOption}
+                disabled={
+                  loading ||
+                  !shippingOption ||
+                  (paymentMethod === "cod" && !codPrepaidAccepted)
+                }
                 aria-disabled={loading}
               >
-                {loading
+               {loading
                   ? "Processing…"
-                  : `Pay ₹${finalPayable.toFixed(2)} • Place Order`}
+                  : paymentMethod === "cod"
+                    ? `Pay ₹${COD_PREPAID_AMOUNT} Now • Confirm COD Order`
+                    : `Pay ₹${finalPayable.toFixed(2)} • Place Order`}
+
               </Button>
 
               <div className="mt-4 text-center">

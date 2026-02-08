@@ -29,10 +29,10 @@ export default function AddToCartButton({ item, quantity, isDisabled }: { item: 
       image: item.image,
       giftWrap: false,
       compareAtPrice: item.compareAtPrice,
-      weight: 0,
-      length: 0,
-      breadth: 0,
-      height: 0
+      weight: item.weight,
+      length: item.length,
+      breadth: item.breadth,
+      height: item.height
     });
     toast.success(`${item.name} added to cart!`, {position: "bottom-right"});
   }

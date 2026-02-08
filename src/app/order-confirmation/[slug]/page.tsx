@@ -1,6 +1,4 @@
 "use client"
-// disable eslint @typescript-eslint/no-unused-vars for this file
-/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { useEffect } from "react"
 import Link from "next/link"
@@ -63,7 +61,7 @@ export default function OrderConfirmation() {
         setShippingOption(null);
     }
     frame()
-  }, [clearCart, setCheckoutInfo])
+  }, [clearCart, setCheckoutInfo, setShippingOption, router, checkoutInfo])
 
   const orderId = slug;
 

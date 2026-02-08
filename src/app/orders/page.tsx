@@ -73,6 +73,9 @@ export default function OrderTrackingPage() {
             <p className="font-body text-sm text-neutral-700 mb-1">
               <span className="font-semibold">Name:</span> {order.customerName}
             </p>
+            <p className="font-body text-sm text-neutral-700">
+              <span className="font-semibold">Order ID:</span> {order.orderId}
+            </p>
             <p className="font-body text-sm text-neutral-700 mb-1">
               <span className="font-semibold">Status:</span>{" "}
               <span
@@ -86,7 +89,7 @@ export default function OrderTrackingPage() {
                     : "text-gray-500"
                 }`}
               >
-                {order.shippingStatus || "Pending"}
+                {order.shippingStatus || "Yet to be processed"}
               </span>
             </p>
             <p className="font-body text-sm text-neutral-700 mb-1">
@@ -98,7 +101,22 @@ export default function OrderTrackingPage() {
             <p className="font-body text-sm text-neutral-700 mb-3">
               <span className="font-semibold">Phone:</span> {order.phone}
             </p>
-
+            <p className="font-body text-sm text-neutral-700 mb-3">
+              <span className="font-semibold">Payment Method:</span> {order.shippingStatus}
+            </p>
+            <p className="font-body text-sm text-neutral-700 mb-3">
+              <span className="font-semibold">Amount Paid:</span> {order.prepaidAmount}
+            </p>
+            <p className="font-body text-sm text-neutral-700 mb-3">
+              <span className="font-semibold">Amount to be paid:</span> {order.codAmount}
+            </p>
+            <p className="font-body text-sm text-neutral-700 mb-3">
+              <span className="font-semibold">Address:</span> {order.address}, {order.city} - {order.pincode}
+            </p>
+            <p className="font-body text-sm text-neutral-700 mb-3">
+              <span className="font-semibold">Items:</span> {order?.items?.map(item => `${item.name} (x${item.quantity})`).join(", ")}
+            </p>   
+            
             {order.trackingUrl && (
               <a
                 href={order.trackingUrl}

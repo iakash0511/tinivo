@@ -1,3 +1,4 @@
+import { CartItem } from "@/store/cart/cart-store";
 import { createClient } from "@sanity/client"
 import { NextResponse } from "next/server"
 
@@ -11,14 +12,40 @@ const client = createClient({
 
 export async function POST(req: Request) {
   try {
-    const { paymentResponse, cartItems, totalAmount, checkoutInfo } = await req.json()
+    const {
+  paymentResponse,
+  cartItems,
+  totalAmount,
+  subtotal,
+  prepaidAmount,
+  codAmount,
+  checkoutInfo,
+  paymentMethod,
+  payableOnDelivery
+} = await req.json()
+  
+let paymentStatus: "paid" | "cod";
+
+if (paymentMethod === "cod") {
+  paymentStatus = "cod";
+} else {
+  paymentStatus = "paid";
+}
+const isPartialCOD = paymentMethod === "cod"
+
+
+
 
     // Create order in Sanity
     const newOrder = await client.create({
       _type: "order",
       orderId: paymentResponse.razorpay_order_id,
       paymentId: paymentResponse.razorpay_payment_id,
-      paymentStatus: paymentResponse.razorpay_payment_id === "COD_PAYMENT" ? "cod" : "paid",
+      paymentMethod,
+      paymentStatus,
+      prepaidAmount: prepaidAmount ?? totalAmount,
+      codAmount: codAmount ?? 0,
+      codNonRefundableAfterDispatch: paymentMethod === "partial_cod",
       shippingStatus: "pending",
       customerName: checkoutInfo.fullName,
       email: checkoutInfo.email,
@@ -27,12 +54,15 @@ export async function POST(req: Request) {
       city: checkoutInfo.city,
       pincode: checkoutInfo.pincode,
       total: totalAmount,
-      items: cartItems.map((item: {name: string, quantity: number, price: number}) => ({
+      payableOnDelivery: isPartialCOD ? payableOnDelivery : 0,
+      subtotal,
+      items: cartItems.map((item: CartItem) => ({
         name: item.name,
         quantity: item.quantity,
         price: item.price,
       })),
     })
+
     // 🔁 Send this order to Shiprocket
     return NextResponse.json({ success: true, order: newOrder })
   } catch (error) {

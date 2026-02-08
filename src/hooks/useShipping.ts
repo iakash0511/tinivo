@@ -233,7 +233,7 @@ useEffect(() => {
     return () => {
       debouncedRef.current.cancel();
     };
-  }, [pincode]);
+  }, [pincode, paymentMethod, subtotal, weight, forceRefreshKey]);
 
   // public refresh to run immediate fetch using latest params
   const refresh = () => {

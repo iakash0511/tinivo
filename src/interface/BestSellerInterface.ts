@@ -9,4 +9,8 @@ export interface BestSellerItem {
   compareAtPrice?: number;
   quantity?: number;
   tags?: string;
+  weight?: number;
+  length?: number;
+  breadth?:number;
+  height?: number;
 }

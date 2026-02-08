@@ -7,6 +7,8 @@ export type ShippingOption = {
   rate?: number;
   service_type?: string;
   raw?: {courier_company_id: string | number};
+  standard?: boolean;
+  express?: boolean;
 };
 
 export type CheckoutInfo = {
@@ -35,6 +37,8 @@ type CheckoutStore = {
   resetCheckout: () => void;
   setShippingOptions: (opts: { standard?: ShippingOption; express?: ShippingOption }) => void;
   shippingOptions?: ShippingOptions;
+  codPrepaidAccepted: boolean;
+  setCodPrepaidAccepted: (v: boolean) => void;
 };
 
 export const useCheckoutStore = create<CheckoutStore>((set) => ({
@@ -46,5 +50,7 @@ export const useCheckoutStore = create<CheckoutStore>((set) => ({
   resetCheckout: () => set({ checkoutInfo: null, paymentMethod: "upi" }),
   shippingOption: null,
   setShippingOption: (option) => set({ shippingOption: option }),
-  setShippingOptions: (options) => set({ shippingOptions: options })
+  setShippingOptions: (options) => set({ shippingOptions: options }),
+  codPrepaidAccepted: false,
+  setCodPrepaidAccepted: (v) => set({ codPrepaidAccepted: v }),
 }));

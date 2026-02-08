@@ -15,10 +15,10 @@ export type CartItem = {
   compareAtPrice?: number;
   category?: string;
   tags?: string;
-  weight: number
-  length: number
-  breadth: number
-  height: number
+  weight?: number;
+  length?: number;
+  breadth?: number;
+  height?: number
 };
 
 type CartStore = {
@@ -90,7 +90,6 @@ export const useCart = create<CartStore>()(
             item._id === id ? { ...item, giftWrap: !item.giftWrap } : item
           ),
         })),
-
       totalItems: () =>
         get().items.reduce((total, item) => total + item.quantity, 0),
     }),

@@ -744,6 +744,7 @@ useEffect(() => {
                       let opt = shippingOptions?.express;
                       opt = {...opt, express: true, standard: false};
                       setShippingOption(opt ?? null)
+                      setCodPrepaidAccepted(false);
                     }}
                     className="accent-primary"
                     disabled={isLoading}
@@ -799,6 +800,7 @@ useEffect(() => {
                 disabled={
                   loading ||
                   !shippingOption ||
+                  (shippingOptions && !shippingOption.express && !shippingOption.standard) ||
                   (paymentMethod === "cod" && !codPrepaidAccepted)
                 }
                 aria-disabled={loading}

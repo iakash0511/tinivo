@@ -6,7 +6,9 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node --test --experimental-strip-types src/lib/order/save-order-utils.test.ts src/lib/shipping/shipping-utils.test.ts",
+    "test:watch": "node --test --experimental-strip-types src/lib/order/save-order-utils.test.ts src/lib/shipping/shipping-utils.test.ts --watch"
   },
   "dependencies": {
     "@faker-js/faker": "^10.0.0",

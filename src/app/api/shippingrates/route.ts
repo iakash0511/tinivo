@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-
+import { clampPackageMetrics, extractShiprocketToken } from '@/lib/shipping/shipping-utils'
 
 // env (set these on Vercel / your host)
 const SHIPROCKET_EMAIL = process.env.SHIPROCKET_EMAIL
@@ -28,14 +28,11 @@ async function getShiprocketToken() {
     throw new Error(`Shiprocket auth failed: ${res.status} ${text}`)
   }
   const json = await res.json() as unknown
-  // token is typically at json.token; safely extract from unknown
-  const j = json as Record<string, unknown> | null
-  const tokenFromRoot = j && typeof j['token'] === 'string' ? (j['token'] as string) : undefined
-  const tokenFromData = j && typeof j['data'] === 'object' && j['data'] !== null && typeof (j['data'] as Record<string, unknown>)['token'] === 'string'
-    ? ((j['data'] as Record<string, unknown>)['token'] as string)
-    : undefined
-  const tokenFromId = j && typeof j['token_id'] === 'string' ? (j['token_id'] as string) : undefined
-  const token = tokenFromRoot || tokenFromData || tokenFromId
+  const token = extractShiprocketToken(json)
+  if (!token) {
+    throw new Error("Shiprocket auth succeeded but token was missing")
+  }
+
   // Shiprocket token TTL isn't always provided; set a safe expiry (50 min)
   tokenCache = { token, expiresAt: Date.now() + 50 * 60 * 1000 }
   return token
@@ -55,10 +52,12 @@ export async function POST(request: Request) {
       cod = 0,
     } = body
 
-    const safeWeight = Math.max(0.1, Number(weight) || 0.5)
-    const safeLength = Math.max(10, Number(length) || 0)
-    const safeBreadth = Math.max(10, Number(breadth) || 0)
-    const safeHeight = Math.max(5, Number(height) || 0)
+    const { safeWeight, safeLength, safeBreadth, safeHeight } = clampPackageMetrics({
+      weight,
+      length,
+      breadth,
+      height,
+    })
 
     if (!delivery_postcode) {
       return NextResponse.json(

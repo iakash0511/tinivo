@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@sanity/client"
 
+const SHIPROCKET_BASE_URL = process.env.SHIPROCKET_BASE_URL || "https://apiv2.shiprocket.in/v1/external"
+
 const sanity = createClient({
   projectId: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID!,
   dataset: "production",
@@ -11,7 +13,7 @@ const sanity = createClient({
 
 async function getShiprocketToken() {
   console.log("🔑 Fetching Shiprocket Token...");
-  const res = await fetch(`${process.env.SHIPROCKET_BASE_URL}/auth/login`, {
+  const res = await fetch(`${SHIPROCKET_BASE_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -29,7 +31,6 @@ export async function POST(req: Request) {
   try {
     const { order } = await req.json()
     const token = await getShiprocketToken()
-    console.log("🔑 Shiprocket Token obtained", token);
     const shiprocketOrder = {
       order_id: order.orderId,
       order_date: new Date().toISOString(),
@@ -57,7 +58,7 @@ export async function POST(req: Request) {
       weight: 0.5,
     }
 
-    const res = await fetch(`${process.env.SHIPROCKET_BASE_URL}/orders/create/adhoc`, {
+    const res = await fetch(`${SHIPROCKET_BASE_URL}/orders/create/adhoc`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

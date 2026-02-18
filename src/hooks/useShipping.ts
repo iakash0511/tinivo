@@ -82,9 +82,9 @@ export function useShipping(
   }
 
   return {
-    length: Math.max(...cartItems.map(i => i.length || 0)),
-    breadth: Math.max(...cartItems.map(i => i.breadth || 0)),
-    height: Math.max(...cartItems.map(i => i.height || 0)),
+    length: Math.max(10, ...cartItems.map(i => i.length || 0)),
+    breadth: Math.max(10, ...cartItems.map(i => i.breadth || 0)),
+    height: Math.max(5, ...cartItems.map(i => i.height || 0)),
   }
 }, [cartItems])
 

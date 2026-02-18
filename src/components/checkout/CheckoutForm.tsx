@@ -18,7 +18,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useCart } from "@/store/cart/cart-store";
 import { useCheckoutStore } from "@/store/checkout/checkout-store";
-import type { CheckoutInfo, ShippingOption } from "@/store/checkout/checkout-store";
+import type { CheckoutInfo } from "@/store/checkout/checkout-store";
 import { useCartTotal } from "@/hooks/useCartTotal";
 import { useShipping } from "@/hooks/useShipping";
 import { Textarea } from "../ui/textarea";
@@ -84,7 +84,7 @@ useEffect(() => {
     script.setAttribute("data-razorpay", "1");
     document.body.appendChild(script);
   }
-  setShippingOption({ express: false, standard: false });
+  setShippingOption(null);
   setCodPrepaidAccepted(false);
 }, [setShippingOption, setCodPrepaidAccepted]);
 
@@ -247,7 +247,7 @@ useEffect(() => {
             const saveData = await saveRes.json();
 
             const orderId =
-              saveData.order?.id || saveData.order?.orderId || "";
+              saveData.orderId || saveData.order?.orderId || "";
 
             setSuccessMsg("Payment successful — redirecting...");
             purchaseComplete(orderId, items, prepaidAmount);
@@ -330,7 +330,7 @@ useEffect(() => {
             const saveData = await saveRes.json();
 
             const orderId =
-              saveData.order?.id || saveData.order?.orderId || "";
+              saveData.orderId || saveData.order?.orderId || "";
 
             setSuccessMsg("Payment successful — redirecting...");
             purchaseComplete(orderId, items, finalPayable);
@@ -600,7 +600,7 @@ useEffect(() => {
                   setErrorMessage("Please complete all required fields.");
                   return;
                 }
-                setShippingOption({express: false, standard: false});
+                setShippingOption(null);
                 setErrorMessage(null);
                 setStep("payment");
               }}
@@ -662,7 +662,7 @@ useEffect(() => {
                         checked={checked}
                         onChange={() => {
                           setPaymentMethod(method.value)
-                          setShippingOption({express: false, standard: false});
+                          setShippingOption(null);
                         }}
                         className="accent-primary"
                       />

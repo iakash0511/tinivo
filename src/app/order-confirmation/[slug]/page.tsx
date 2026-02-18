@@ -10,6 +10,15 @@ import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { useCart } from "@/store/cart/cart-store"
 import { CheckoutInfo, useCheckoutStore } from "@/store/checkout/checkout-store"
 
+const EMPTY_CHECKOUT: CheckoutInfo = {
+  fullName: "",
+  phoneNumber: "",
+  email: "",
+  address: "",
+  city: "",
+  pincode: "",
+};
+
 export default function OrderConfirmation() {
   const params = useParams()
   const slug = params.slug as string
@@ -22,14 +31,6 @@ export default function OrderConfirmation() {
   const setShippingOption = useCheckoutStore((state) => state.setShippingOption);
 
   const router = useRouter();
-  const EMPTY_CHECKOUT: CheckoutInfo = {
-    fullName: "",
-    phoneNumber: "",
-    email: "",
-    address: "",
-    city: "",
-    pincode: "",
-  };
 
   useEffect(() => {
     if (!checkoutInfo || Object.values(checkoutInfo).length === 0) {
@@ -39,6 +40,10 @@ export default function OrderConfirmation() {
     // Confetti celebration burst
     const duration = 2 * 1000
     const end = Date.now() + duration
+
+    clearCart();
+    setCheckoutInfo(EMPTY_CHECKOUT);
+    setShippingOption(null);
 
     const frame = () => {
       confetti({
@@ -53,12 +58,9 @@ export default function OrderConfirmation() {
         angle: 120,
         spread: 80,
         origin: { x: 1 },
-        colors: ["#9D7EDB", "#FFB7D5", "#A2D2FF"], 
+        colors: ["#9D7EDB", "#FFB7D5", "#A2D2FF"],
       })
-      if (Date.now() < end) requestAnimationFrame(frame)  
-        clearCart();
-        setCheckoutInfo(EMPTY_CHECKOUT);
-        setShippingOption(null);
+      if (Date.now() < end) requestAnimationFrame(frame)
     }
     frame()
   }, [clearCart, setCheckoutInfo, setShippingOption, router, checkoutInfo])

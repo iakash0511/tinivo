@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
-
+import { clampPackageMetrics, extractShiprocketToken } from '@/lib/shipping/shipping-utils'
 
 // env (set these on Vercel / your host)
 const SHIPROCKET_EMAIL = process.env.SHIPROCKET_EMAIL
 const SHIPROCKET_PASSWORD = process.env.SHIPROCKET_PASSWORD
 const SHIPROCKET_SOURCE_PINCODE = process.env.SHIPROCKET_SOURCE_PINCODE
+const SHIPROCKET_BASE_URL = process.env.SHIPROCKET_BASE_URL || 'https://apiv2.shiprocket.in/v1/external'
 
 // in-memory token cache (serverless may get cold resets — but this reduces auth calls)
 let tokenCache: { token?: string; expiresAt?: number } = {}
@@ -14,7 +15,7 @@ async function getShiprocketToken() {
     return tokenCache.token
   }
 
-  const res = await fetch('https://apiv2.shiprocket.in/v1/external/auth/login', {
+  const res = await fetch(`${SHIPROCKET_BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -27,14 +28,11 @@ async function getShiprocketToken() {
     throw new Error(`Shiprocket auth failed: ${res.status} ${text}`)
   }
   const json = await res.json() as unknown
-  // token is typically at json.token; safely extract from unknown
-  const j = json as Record<string, unknown> | null
-  const tokenFromRoot = j && typeof j['token'] === 'string' ? (j['token'] as string) : undefined
-  const tokenFromData = j && typeof j['data'] === 'object' && j['data'] !== null && typeof (j['data'] as Record<string, unknown>)['token'] === 'string'
-    ? ((j['data'] as Record<string, unknown>)['token'] as string)
-    : undefined
-  const tokenFromId = j && typeof j['token_id'] === 'string' ? (j['token_id'] as string) : undefined
-  const token = tokenFromRoot || tokenFromData || tokenFromId
+  const token = extractShiprocketToken(json)
+  if (!token) {
+    throw new Error("Shiprocket auth succeeded but token was missing")
+  }
+
   // Shiprocket token TTL isn't always provided; set a safe expiry (50 min)
   tokenCache = { token, expiresAt: Date.now() + 50 * 60 * 1000 }
   return token
@@ -54,8 +52,14 @@ export async function POST(request: Request) {
       cod = 0,
     } = body
 
+    const { safeWeight, safeLength, safeBreadth, safeHeight } = clampPackageMetrics({
+      weight,
+      length,
+      breadth,
+      height,
+    })
 
-    if (!delivery_postcode || !length || !breadth || !height) {
+    if (!delivery_postcode) {
       return NextResponse.json(
         { error: "Missing shipping parameters" },
         { status: 400 }
@@ -68,19 +72,18 @@ export async function POST(request: Request) {
 
     const token = await getShiprocketToken()
 
-    console.log('Fetched Shiprocket token, proceeding to get rates', token)
 
     // Serviceability endpoint expects pickup and delivery pincode and weight
     const serviceUrl =
-      "https://apiv2.shiprocket.in/v1/external/courier/serviceability/?" +
+      `${SHIPROCKET_BASE_URL}/courier/serviceability/?` +
       new URLSearchParams({
         pickup_postcode: SHIPROCKET_SOURCE_PINCODE,
         delivery_postcode,
-        weight: String(weight),
+        weight: String(safeWeight),
         cod: String(cod),
-        length: String(length),
-        breadth: String(breadth),
-        height: String(height),
+        length: String(safeLength),
+        breadth: String(safeBreadth),
+        height: String(safeHeight),
       }).toString()
 
     const sres = await fetch(serviceUrl, {

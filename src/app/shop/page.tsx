@@ -172,16 +172,13 @@ function buildQuery(params: Record<string, unknown>) {
 }
 
 /**
- * NOTE: searchParams is typed as `Params | undefined` — NOT Promise<Params>.
- * Next's App Router passes the parsed searchParams object directly.
+ * NOTE: searchParams can arrive as Promise in generated Next types for this project.
  */
 export default async function ShopPage({
   searchParams,
 }: {
-  // <-- important: Promise<any> here satisfies Next's generated type-checker
   searchParams?: Promise<Params>;
 }) {
-  // Await works whether Next passes a Promise or an already-resolved object.
   const rawParams: Params = (await searchParams) ?? {}
   // Coerce into our Params type (safe runtime handling below)
   const params: Params = {

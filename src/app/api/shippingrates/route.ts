@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server'
 const SHIPROCKET_EMAIL = process.env.SHIPROCKET_EMAIL
 const SHIPROCKET_PASSWORD = process.env.SHIPROCKET_PASSWORD
 const SHIPROCKET_SOURCE_PINCODE = process.env.SHIPROCKET_SOURCE_PINCODE
+const SHIPROCKET_BASE_URL = process.env.SHIPROCKET_BASE_URL || 'https://apiv2.shiprocket.in/v1/external'
 
 // in-memory token cache (serverless may get cold resets — but this reduces auth calls)
 let tokenCache: { token?: string; expiresAt?: number } = {}
@@ -14,7 +15,7 @@ async function getShiprocketToken() {
     return tokenCache.token
   }
 
-  const res = await fetch('https://apiv2.shiprocket.in/v1/external/auth/login', {
+  const res = await fetch(`${SHIPROCKET_BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -54,8 +55,12 @@ export async function POST(request: Request) {
       cod = 0,
     } = body
 
+    const safeWeight = Math.max(0.1, Number(weight) || 0.5)
+    const safeLength = Math.max(10, Number(length) || 0)
+    const safeBreadth = Math.max(10, Number(breadth) || 0)
+    const safeHeight = Math.max(5, Number(height) || 0)
 
-    if (!delivery_postcode || !length || !breadth || !height) {
+    if (!delivery_postcode) {
       return NextResponse.json(
         { error: "Missing shipping parameters" },
         { status: 400 }
@@ -68,19 +73,18 @@ export async function POST(request: Request) {
 
     const token = await getShiprocketToken()
 
-    console.log('Fetched Shiprocket token, proceeding to get rates', token)
 
     // Serviceability endpoint expects pickup and delivery pincode and weight
     const serviceUrl =
-      "https://apiv2.shiprocket.in/v1/external/courier/serviceability/?" +
+      `${SHIPROCKET_BASE_URL}/courier/serviceability/?` +
       new URLSearchParams({
         pickup_postcode: SHIPROCKET_SOURCE_PINCODE,
         delivery_postcode,
-        weight: String(weight),
+        weight: String(safeWeight),
         cod: String(cod),
-        length: String(length),
-        breadth: String(breadth),
-        height: String(height),
+        length: String(safeLength),
+        breadth: String(safeBreadth),
+        height: String(safeHeight),
       }).toString()
 
     const sres = await fetch(serviceUrl, {

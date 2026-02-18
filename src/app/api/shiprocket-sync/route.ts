@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { createClient } from "@sanity/client"
 import { Resend } from "resend"
 
+const SHIPROCKET_BASE_URL = process.env.SHIPROCKET_BASE_URL || "https://apiv2.shiprocket.in/v1/external"
+
 export const runtime = "nodejs"
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
@@ -15,7 +17,7 @@ const sanity = createClient({
 })
 
 async function getShiprocketToken() {
-  const res = await fetch(`${process.env.SHIPROCKET_BASE_URL}/auth/login`, {
+  const res = await fetch(`${SHIPROCKET_BASE_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -45,7 +47,7 @@ export async function GET() {
     for (const order of orders) {
       // 2️⃣ Fetch latest shipment status from Shiprocket
       const res = await fetch(
-        `${process.env.SHIPROCKET_BASE_URL}/courier/track/shipment/${order.trackingId}`,
+        `${SHIPROCKET_BASE_URL}/courier/track/shipment/${order.trackingId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

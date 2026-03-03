@@ -61,7 +61,7 @@ export default function OrderConfirmation() {
         setShippingOption(null);
     }
     frame()
-  }, [clearCart, setCheckoutInfo, setShippingOption, router, checkoutInfo])
+  }, [clearCart, setCheckoutInfo, setShippingOption, router, checkoutInfo, EMPTY_CHECKOUT]);
 
   const orderId = slug;
 

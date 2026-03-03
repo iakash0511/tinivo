@@ -18,7 +18,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useCart } from "@/store/cart/cart-store";
 import { useCheckoutStore } from "@/store/checkout/checkout-store";
-import type { CheckoutInfo, ShippingOption } from "@/store/checkout/checkout-store";
+import type { CheckoutInfo } from "@/store/checkout/checkout-store";
 import { useCartTotal } from "@/hooks/useCartTotal";
 import { useShipping } from "@/hooks/useShipping";
 import { Textarea } from "../ui/textarea";

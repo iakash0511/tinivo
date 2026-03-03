@@ -29,9 +29,11 @@ export default function ProductInfo({ product }: { product: Product }) {
       <h1 className="text-2xl font-heading">{product.name}</h1>
       <p>Perfect for gifting or daily cute moments</p>
       <p className="text-xl font-cta text-primary flex gap-2 items-center">
-        <span className="text-gray-600 line-through">
-          ₹{product.compareAtPrice}
-        </span>
+        {product.compareAtPrice && (
+          <span className="text-gray-600 line-through">
+            ₹{product.compareAtPrice}
+          </span>
+        )}
         ₹{product.price}
         {!isAvailable && (
           <span className="inline-block bg-neutral-dark text-white text-xs font-semibold px-3 py-1 rounded-full">

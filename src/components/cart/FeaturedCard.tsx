@@ -13,9 +13,11 @@ function FeaturedCard({p, handleBuyNow}: {p: Product, handleBuyNow: (e:React.Mou
         </div>
         <div className="text-sm font-heading line-clamp-1 text-center">{p.name}</div>
         <div className="text-primary font-cta font-semibold mt-1 text-center"> 
-            <span className="text-gray-600 line-through mr-1">
-                ₹{p.compareAtPrice}
-            </span>₹{p.price}
+          {p.compareAtPrice && (
+              <span className="text-gray-600 line-through mr-1">
+                  ₹{p.compareAtPrice}
+              </span>
+          )}₹{p.price}
         </div>
          <Button
             onClick={(e) => handleBuyNow(e, p)}

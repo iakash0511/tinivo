@@ -53,7 +53,10 @@ export default function BestsellerCard({ item, id }: { item: BestSellerItem; id:
       </p> */}
 
       <p className={`font-cta font-semibold text-primary text-lg mb-3 flex gap-2 ${contentEffect}`}>
-        <span className="text-gray-600 line-through">₹{item.compareAtPrice}</span>₹{item.price}
+        {item.compareAtPrice && (
+          <span className="text-gray-600 line-through">₹{item.compareAtPrice}</span>
+        )}
+          ₹{item.price}
       </p>
 
       {/* AddToCart area — disabled visually & functionally when sold out */}

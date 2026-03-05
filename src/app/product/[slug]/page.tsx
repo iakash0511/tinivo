@@ -43,7 +43,7 @@ export default async function ProductPage({ params }: { params?: Promise<{ slug:
 
   return (
     <main className="min-h-screen px-4 py-12">
-      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10">
+      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10 w-full">
         <ProductGallery images={product.images || []} />
         <div className="flex flex-col gap-8">
           <ProductInfo product={product} />

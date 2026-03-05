@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react'; // Added useState
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Logo } from '@/components/Logo';
@@ -17,6 +17,14 @@ export default function Header() {
   const totalItems = useCart((s) => s.totalItems());
   const isMobile = useIsMobile();
   const cartRef = useRef<SVGSVGElement | null>(null);
+  
+  // 1. ADD MOUNTED STATE
+  const [mounted, setMounted] = useState(false);
+
+  // 2. SET MOUNTED TO TRUE ON INITIAL LOAD
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const sections = [
     { name: 'Home', href: '/', show: true },
@@ -30,7 +38,6 @@ export default function Header() {
   ];
 
   useEffect(() => {
-    // subtle collectible animation when cart updates
     if (!cartRef.current) return;
     cartRef.current.classList.add('animate-bounce');
     if (totalItems > 0) cartRef.current.classList.add('text-primary');
@@ -43,9 +50,7 @@ export default function Header() {
 
   return (
     <header className="w-full sticky top-0 z-50 px-4 py-3 bg-light-bg/40 backdrop-blur border-b border-neutral-light shadow-sm">
-      {/* Grid: left control | center logo | right control */}
       <div className="max-w-6xl mx-auto grid grid-cols-3 items-center gap-2">
-        {/* LEFT: Hamburger (mobile) OR nav links (desktop) */}
         <div className="flex items-center">
             <Sheet>
               <SheetTrigger asChild>
@@ -92,22 +97,21 @@ export default function Header() {
             </Sheet>
         </div>
 
-        {/* CENTER: Logo (centered on mobile) */}
         <div className="flex items-center justify-center">
-          {/* center link always - small size on mobile */}
           <Link href="/" className="inline-flex items-center">
             <span className="sr-only">Tinivo home</span>
             <Logo size={isMobile ? 64 : 80} className="block" />
           </Link>
         </div>
 
-        {/* RIGHT: Cart (always on right) */}
         <div className="flex items-center justify-end">
           <Sheet>
             <SheetTrigger asChild>
               <button aria-label="Open cart" className="relative p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
                 <ShoppingBag ref={cartRef} className="w-6 h-6" />
-                {totalItems > 0 && (
+                
+                {/* 3. WRAP BADGE IN MOUNTED CHECK */}
+                {mounted && totalItems > 0 && (
                   <span className="absolute -top-1 -right-1 bg-primary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
                     {totalItems}
                   </span>
@@ -115,7 +119,6 @@ export default function Header() {
               </button>
             </SheetTrigger>
 
-            {/* Cart drawer side: bottom for mobile, right for desktop */}
             <SheetContent side={isMobile ? 'bottom' : 'right'} className={isMobile ? 'h-3/4' : 'w-[480px] h-full'}>
               <CartDrawer />
             </SheetContent>

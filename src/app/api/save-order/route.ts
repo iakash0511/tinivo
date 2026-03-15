@@ -60,7 +60,7 @@ export async function POST(req: Request) {
 
     // 2. Re-calculate and verify the order amount on server to prevent manipulation
     const { finalPayable, subtotal } = await calculateOrderAmount(
-      cartItems.map((i: any) => ({ _id: i._id, quantity: i.quantity, giftWrap: i.giftWrap })),
+      cartItems.map((i: { _id: string; quantity: number; giftWrap?: boolean }) => ({ _id: i._id, quantity: i.quantity, giftWrap: i.giftWrap })),
       paymentMethod,
       promoCode,
       shippingRate
@@ -73,13 +73,11 @@ export async function POST(req: Request) {
     const transaction = client.transaction();
 
     // Decrement quantities
-    cartItems.forEach((item: any) => {
+    cartItems.forEach((item: { _id: string; quantity: number }) => {
       transaction.patch(item._id, p => p.dec({ quantity: item.quantity }));
     });
 
-    let paymentStatus: "paid" | "cod" = isPartialCOD ? "paid" : "paid"; // Payment for online or COD deposit is 'paid'
-    // Actually, order document has paymentStatus: paid | failed | pending
-    // Let's stick to the schema types: paid, failed, pending
+    // Payment for online or COD deposit is 'paid'
 
     transaction.create({
       _type: "order",
@@ -119,8 +117,9 @@ export async function POST(req: Request) {
         email: checkoutInfo.email
       } 
     })
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Save Order Error:", error)
-    return NextResponse.json({ success: false, error: error.message || "Internal Server Error" }, { status: 500 })
+    const message = error instanceof Error ? error.message : 'Internal Server Error';
+    return NextResponse.json({ success: false, error: message }, { status: 500 })
   }
 }

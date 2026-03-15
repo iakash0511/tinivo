@@ -164,13 +164,13 @@ export function useShipping(
         // Express candidates: options that are strictly FASTER than the standard option
         const standardDays = Number(standard.estimated_days || 10);
         
-        let expressCandidates = normalized.filter((opt) => {
+        const expressCandidates = normalized.filter((opt) => {
            const days = Number(opt.estimated_days || 10);
            return days < standardDays;
         });
 
         // Out of available faster options, pick the cheapest one for the best customer experience
-        let express = expressCandidates.sort((a, b) => (a.rate ?? 0) - (b.rate ?? 0))[0];
+        const express = expressCandidates.sort((a, b) => (a.rate ?? 0) - (b.rate ?? 0))[0];
 
         // Rename them to Standard and Express for the UI
         if (standard) standard.courier_name = "Standard";
@@ -208,7 +208,7 @@ export function useShipping(
   const forceRefreshKey = opts?.forceRefreshKey;
 
   type DebouncedFn = ((pc: string) => void) & { cancel: () => void };
-  const noopDebounced: DebouncedFn = Object.assign((pc: string) => {}, { cancel: () => {} });
+  const noopDebounced: DebouncedFn = Object.assign((_pc: string) => {}, { cancel: () => {} });
   const debouncedRef = useRef<DebouncedFn>(noopDebounced);
 
   useEffect(() => {

@@ -52,7 +52,7 @@ export async function POST(req: Request) {
             if (!userId) {
                 return NextResponse.json({ error: 'You must be logged in to use this specific code.' }, { status: 401 });
             }
-            const isAssigned = discountDoc.assignedUsers.some((ref: any) => ref._ref === userId);
+            const isAssigned = discountDoc.assignedUsers.some((ref: { _ref: string }) => ref._ref === userId);
             if (!isAssigned) {
                 return NextResponse.json({ error: 'This discount code is not available for your account.' }, { status: 403 });
             }
@@ -85,8 +85,9 @@ export async function POST(req: Request) {
             value: discountDoc.value,
         }, { status: 200 });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Discount Apply Error:', error);
-        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Internal Server Error';
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

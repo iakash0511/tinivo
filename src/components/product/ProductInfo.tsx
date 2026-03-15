@@ -21,7 +21,7 @@ export default function ProductInfo({ product }: { product: Product }) {
   };
 
   const handleBuyNow = () => {
-    setBuyNowItem({ ...product, _id: product._id, quantity: 1, giftWrap, image: product.images?.[0] } as any);
+    setBuyNowItem({ ...product, _id: product._id, quantity: 1, giftWrap, image: product.images?.[0] } as unknown as Parameters<typeof setBuyNowItem>[0]);
     router.push("/checkout");
   };
 

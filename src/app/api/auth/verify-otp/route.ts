@@ -13,7 +13,7 @@ export async function POST(req: Request) {
 
         // 1. Verify idToken with Firebase Admin SDK
         const decodedToken = await adminAuth.verifyIdToken(idToken);
-        const { uid, phone_number } = decodedToken;
+        const { uid } = decodedToken;
 
         // 2. Double check if the user actually exists in Sanity
         const user = await client.fetch(`*[_type == "user" && _id == $userId][0]`, { userId });
@@ -50,8 +50,9 @@ export async function POST(req: Request) {
             token: sessionToken,
         }, { status: 200 });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Verify OTP Error:', error);
-        return NextResponse.json({ error: error.message || 'OTP Verification Failed' }, { status: 400 });
+        const message = error instanceof Error ? error.message : 'OTP Verification Failed';
+        return NextResponse.json({ error: message }, { status: 400 });
     }
 }

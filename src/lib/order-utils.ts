@@ -29,7 +29,7 @@ export async function calculateOrderAmount(
 
   // 2. Calculate Subtotal and Gift Wrap
   for (const item of items) {
-    const product = products.find((p: any) => p._id === item._id);
+    const product = products.find((p: { _id: string; price: number; quantity: number }) => p._id === item._id);
     if (!product) {
       throw new Error(`Product with ID ${item._id} not found.`);
     }

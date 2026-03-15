@@ -24,7 +24,7 @@ export default function AccountPage() {
     const [phone, setPhone] = useState("");
     const [address, setAddress] = useState("");
 
-    const [orders, setOrders] = useState<any[]>([]);
+    const [orders, setOrders] = useState<Array<{ _id?: string; orderId?: string; shippingStatus?: string; paymentStatus?: string; _createdAt?: string; items?: Array<{ name: string; quantity: number }>; total?: number }>>([]);
 
     useEffect(() => {
         const fetchProfileData = async () => {
@@ -88,8 +88,9 @@ export default function AccountPage() {
 
             toast.success("Profile updated successfully!");
             setProfile(data.user);
-        } catch (error: any) {
-            toast.error(error.message);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Update failed';
+            toast.error(message);
         } finally {
             setSaving(false);
         }
@@ -233,7 +234,7 @@ export default function AccountPage() {
 
                                         {/* Items */}
                                         <ul className="space-y-1">
-                                            {order.items?.map((item: any, i: number) => (
+                                            {order.items?.map((item: { name: string; quantity: number }, i: number) => (
                                                 <li key={i} className="text-sm text-neutral-700 flex items-center gap-2">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-neutral-300"></span>
                                                     {item.name} <span className="text-neutral-500">(x{item.quantity})</span>

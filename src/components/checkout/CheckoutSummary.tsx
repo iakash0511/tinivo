@@ -33,8 +33,9 @@ export default function CheckoutSummary({ isMobile }: { isMobile?: boolean } = {
       setAppliedDiscount({ code: data.code, amount: data.discountAmount });
       setPromoCode("");
       toast.success(data.message || "Promo code applied!");
-    } catch (error: any) {
-      toast.error(error.message || "Invalid promo code");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Invalid promo code';
+      toast.error(message);
     } finally {
       setApplying(false);
     }

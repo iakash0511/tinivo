@@ -36,8 +36,9 @@ export default function SignupPage() {
             toast.success("Welcome to Tinivo!");
             router.push("/account");
 
-        } catch (error: any) {
-            toast.error(error.message);
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'Signup failed';
+            toast.error(message);
         } finally {
             setLoading(false);
         }

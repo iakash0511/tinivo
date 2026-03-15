@@ -46,7 +46,7 @@ export function CheckoutForm() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const router = useRouter();
-  const { items, buyNowItem, setBuyNowItem, clearCart } = useCart();
+  const { items, buyNowItem } = useCart();
   const currentItems = buyNowItem ? [buyNowItem] : items;
   const { subtotal, finalPayable } = useCartTotal();
   const { checkoutInfo, setCheckoutInfo, paymentMethod, setPaymentMethod, appliedDiscount } =

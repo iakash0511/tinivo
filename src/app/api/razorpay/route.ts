@@ -1,6 +1,6 @@
 import Razorpay from "razorpay";
 import { NextResponse } from "next/server";
-import { calculateOrderAmount, ServerCartItem } from "@/lib/order-utils";
+import { calculateOrderAmount } from "@/lib/order-utils";
 
 export const runtime = "nodejs";
 
@@ -53,8 +53,9 @@ export async function POST(req: Request) {
 
     const order = await razorpay.orders.create(options);
     return NextResponse.json(order);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Razorpay Order Error:", error);
-    return NextResponse.json({ error: "Failed to create payment order", details: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Failed to create payment order';
+    return NextResponse.json({ error: "Failed to create payment order", details: message }, { status: 500 });
   }
 }

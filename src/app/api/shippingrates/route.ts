@@ -110,7 +110,7 @@ export async function POST(request: Request) {
         if (parsed.message || parsed.error) {
           errorDetails = parsed.message || parsed.error || errorDetails;
         }
-      } catch (_e) {
+      } catch {
         // Not a JSON error
       }
       console.error(`Shiprocket serviceability error (${sres.status}):`, errorDetails)

@@ -68,7 +68,7 @@ export function useShipping(
   const [error, setError] = useState<string | null>(null);
   const items = useCart((s) => s.items);
   const buyNowItem = useCart((s) => s.buyNowItem);
-  const cartItems = (buyNowItem ? [buyNowItem] : items) as CartItem[];
+  const cartItems = useMemo(() => (buyNowItem ? [buyNowItem] : items) as CartItem[], [buyNowItem, items]);
   
   const subtotal = cartItems.reduce((acc, it) => acc + it.price * it.quantity, 0);
   
@@ -208,7 +208,7 @@ export function useShipping(
   const forceRefreshKey = opts?.forceRefreshKey;
 
   type DebouncedFn = ((pc: string) => void) & { cancel: () => void };
-  const noopDebounced: DebouncedFn = Object.assign((_pc: string) => {}, { cancel: () => {} });
+  const noopDebounced: DebouncedFn = Object.assign((() => {}) as (pc: string) => void, { cancel: () => {} });
   const debouncedRef = useRef<DebouncedFn>(noopDebounced);
 
   useEffect(() => {

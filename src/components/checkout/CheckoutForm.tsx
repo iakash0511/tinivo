@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
@@ -47,7 +47,7 @@ export function CheckoutForm() {
 
   const router = useRouter();
   const { items, buyNowItem } = useCart();
-  const currentItems = buyNowItem ? [buyNowItem] : items;
+  const currentItems = useMemo(() => buyNowItem ? [buyNowItem] : items, [buyNowItem, items]);
   const { subtotal, finalPayable } = useCartTotal();
   const { checkoutInfo, setCheckoutInfo, paymentMethod, setPaymentMethod, appliedDiscount } =
     useCheckoutStore();

@@ -12,6 +12,9 @@ export async function POST(req: Request) {
         }
 
         // 1. Verify idToken with Firebase Admin SDK
+        if (!adminAuth) {
+            return NextResponse.json({ error: 'Firebase Admin is not configured' }, { status: 500 });
+        }
         const decodedToken = await adminAuth.verifyIdToken(idToken);
         const { uid } = decodedToken;
 

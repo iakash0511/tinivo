@@ -228,7 +228,7 @@ export default function AccountPage() {
                                         </div>
                                         
                                         <div className="text-sm text-neutral-500 mb-3 space-y-1">
-                                            <p>Placed: {new Date(order._createdAt).toLocaleDateString()}</p>
+                                            <p>Placed: {new Date(order._createdAt || '').toLocaleDateString()}</p>
                                             <p>Payment: <span className="capitalize">{order.paymentStatus === "cod" ? "Cash On Delivery" : order.paymentStatus || "Pending"}</span></p>
                                         </div>
 

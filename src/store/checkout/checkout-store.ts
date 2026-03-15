@@ -6,7 +6,7 @@ export type ShippingOption = {
   estimated_days?: string | number;
   rate?: number;
   service_type?: string;
-  raw?: {courier_company_id: string | number};
+  raw?: { courier_company_id: string | number };
   standard?: boolean;
   express?: boolean;
 };
@@ -39,6 +39,8 @@ type CheckoutStore = {
   shippingOptions?: ShippingOptions;
   codPrepaidAccepted: boolean;
   setCodPrepaidAccepted: (v: boolean) => void;
+  appliedDiscount: { code: string; amount: number } | null;
+  setAppliedDiscount: (discount: { code: string; amount: number } | null) => void;
 };
 
 export const useCheckoutStore = create<CheckoutStore>((set) => ({
@@ -53,4 +55,6 @@ export const useCheckoutStore = create<CheckoutStore>((set) => ({
   setShippingOptions: (options) => set({ shippingOptions: options }),
   codPrepaidAccepted: false,
   setCodPrepaidAccepted: (v) => set({ codPrepaidAccepted: v }),
+  appliedDiscount: null,
+  setAppliedDiscount: (discount) => set({ appliedDiscount: discount }),
 }));

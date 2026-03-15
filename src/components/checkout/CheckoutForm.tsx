@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from "next/navigation";
@@ -46,9 +46,10 @@ export function CheckoutForm() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const router = useRouter();
-  const { items } = useCart();
+  const { items, buyNowItem } = useCart();
+  const currentItems = useMemo(() => buyNowItem ? [buyNowItem] : items, [buyNowItem, items]);
   const { subtotal, finalPayable } = useCartTotal();
-  const { checkoutInfo, setCheckoutInfo, paymentMethod, setPaymentMethod } =
+  const { checkoutInfo, setCheckoutInfo, paymentMethod, setPaymentMethod, appliedDiscount } =
     useCheckoutStore();
   const pincode = checkoutInfo?.pincode;
   const shippingOptions = useCheckoutStore((state) => state.shippingOptions);
@@ -68,25 +69,25 @@ export function CheckoutForm() {
 
   // Redirect if cart is empty + load Razorpay script
   useEffect(() => {
-  if (pathname !== "/checkout") return;
-  if (!items || items.length === 0) {
-    router.replace("/");
-  }
-}, [items, pathname, router]);
+    if (pathname !== "/checkout") return;
+    if (!currentItems || currentItems.length === 0) {
+      router.replace("/");
+    }
+  }, [currentItems, pathname, router]);
 
 
-useEffect(() => {
-  const existing = document.querySelector("script[data-razorpay]");
-  if (!existing) {
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    script.setAttribute("data-razorpay", "1");
-    document.body.appendChild(script);
-  }
-  setShippingOption({ express: false, standard: false });
-  setCodPrepaidAccepted(false);
-}, [setShippingOption, setCodPrepaidAccepted]);
+  useEffect(() => {
+    const existing = document.querySelector("script[data-razorpay]");
+    if (!existing) {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      script.setAttribute("data-razorpay", "1");
+      document.body.appendChild(script);
+    }
+    setShippingOption({ express: false, standard: false });
+    setCodPrepaidAccepted(false);
+  }, [setShippingOption, setCodPrepaidAccepted]);
 
 
   // 🧠 Load checkout info from localStorage on mount
@@ -206,7 +207,11 @@ useEffect(() => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            amount: prepaidAmount * 100,
+            items: currentItems.map((i) => ({ _id: i._id, quantity: i.quantity, giftWrap: i.giftWrap })),
+            paymentMethod,
+            promoCode: appliedDiscount?.code,
+            shippingRate: shippingOption?.rate || 0,
+            isCODPrepaid: true,
           }),
         });
 
@@ -223,12 +228,16 @@ useEffect(() => {
           order_id: createData.id,
 
           handler: async (response: RazorpayResponse) => {
+            const token = localStorage.getItem("token");
             const saveRes = await fetch("/api/save-order", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: { 
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {})
+              },
               body: JSON.stringify({
                 paymentResponse: response,
-                cartItems: items,
+                cartItems: currentItems,
                 subtotal,
                 totalAmount: finalPayable,
                 prepaidAmount,
@@ -236,6 +245,8 @@ useEffect(() => {
                 payableOnDelivery,
                 checkoutInfo,
                 paymentMethod: paymentMethod,
+                promoCode: appliedDiscount?.code,
+                shippingRate: shippingOption?.rate || 0,
               }),
             });
 
@@ -250,8 +261,8 @@ useEffect(() => {
               saveData.order?.id || saveData.order?.orderId || "";
 
             setSuccessMsg("Payment successful — redirecting...");
-            purchaseComplete(orderId, items, prepaidAmount);
-            
+            purchaseComplete(orderId, currentItems, prepaidAmount);
+
             const name = checkoutInfo?.fullName || "Customer";
             router.replace(`/order-confirmation/${orderId}?name=${encodeURIComponent(name)}`);
 
@@ -265,7 +276,7 @@ useEffect(() => {
             } catch (err) {
               console.error("Failed to clear checkout storage", err);
             }
-             try {
+            try {
               await fetch(`/api/shiprocket`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -298,7 +309,13 @@ useEffect(() => {
       const createRes = await fetch("/api/razorpay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: amountInPaise }),
+        body: JSON.stringify({
+          items: currentItems.map((i) => ({ _id: i._id, quantity: i.quantity, giftWrap: i.giftWrap })),
+          paymentMethod,
+          promoCode: appliedDiscount?.code,
+          shippingRate: shippingOption?.rate || 0,
+          isCODPrepaid: false,
+        }),
       });
       if (!createRes.ok) throw new Error("Failed to create payment order");
       const createData = await createRes.json();
@@ -313,16 +330,22 @@ useEffect(() => {
         image: "/assets/logo.png",
         handler: async function (response: RazorpayResponse) {
           try {
+            const token = localStorage.getItem("token");
             const saveRes = await fetch("/api/save-order", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: { 
+                "Content-Type": "application/json",
+                ...(token ? { Authorization: `Bearer ${token}` } : {})
+              },
               body: JSON.stringify({
                 paymentResponse: response,
-                cartItems: items,
+                cartItems: currentItems,
                 totalAmount: finalPayable,
                 subtotal,
                 checkoutInfo,
                 paymentMethod: paymentMethod,
+                promoCode: appliedDiscount?.code,
+                shippingRate: shippingOption?.rate || 0,
               }),
             });
             if (!saveRes.ok)
@@ -333,8 +356,8 @@ useEffect(() => {
               saveData.order?.id || saveData.order?.orderId || "";
 
             setSuccessMsg("Payment successful — redirecting...");
-            purchaseComplete(orderId, items, finalPayable);
-            
+            purchaseComplete(orderId, currentItems, finalPayable);
+
             const name = checkoutInfo?.fullName || "Customer";
             router.replace(`/order-confirmation/${orderId}?name=${encodeURIComponent(name)}`);
 
@@ -348,7 +371,7 @@ useEffect(() => {
             } catch (err) {
               console.error("Failed to clear checkout storage", err);
             }
-             try {
+            try {
               await fetch(`/api/shiprocket`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -370,9 +393,8 @@ useEffect(() => {
           contact: checkoutInfo?.phoneNumber || "",
         },
         notes: {
-          address: `${checkoutInfo?.address || ""}, ${
-            checkoutInfo?.city || ""
-          } - ${checkoutInfo?.pincode || ""}`,
+          address: `${checkoutInfo?.address || ""}, ${checkoutInfo?.city || ""
+            } - ${checkoutInfo?.pincode || ""}`,
         },
         theme: { color: "#9D7EDB" },
       };
@@ -391,9 +413,9 @@ useEffect(() => {
       console.error("place order error", err);
       const message =
         err &&
-        typeof err === "object" &&
-        "message" in err &&
-        typeof (err as { message?: unknown }).message === "string"
+          typeof err === "object" &&
+          "message" in err &&
+          typeof (err as { message?: unknown }).message === "string"
           ? (err as { message?: string }).message
           : null;
       setErrorMessage(message || "Something went wrong, please try again.");
@@ -424,7 +446,7 @@ useEffect(() => {
   const onBlurField = (field: string) =>
     setTouched((prev) => ({ ...prev, [field]: true }));
 
-  
+
   return (
     <div className="space-y-8">
       {/* Progress Bar */}
@@ -434,9 +456,8 @@ useEffect(() => {
         </p>
         <div className="mt-2 w-full h-1 bg-neutral-light rounded-full">
           <div
-            className={`h-full bg-primary transition-all duration-500 ${
-              step === "shipping" ? "w-1/2" : "w-full"
-            }`}
+            className={`h-full bg-primary transition-all duration-500 ${step === "shipping" ? "w-1/2" : "w-full"
+              }`}
             aria-hidden
           />
         </div>
@@ -600,7 +621,7 @@ useEffect(() => {
                   setErrorMessage("Please complete all required fields.");
                   return;
                 }
-                setShippingOption({express: false, standard: false});
+                setShippingOption({ express: false, standard: false });
                 setErrorMessage(null);
                 setStep("payment");
               }}
@@ -617,157 +638,156 @@ useEffect(() => {
       <AnimatePresence mode="wait">
         {step === "payment" && (
           <>
-          <motion.div
-            key="payment"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="bg-white rounded-2xl shadow-sm p-6"
-            role="region"
-            aria-labelledby="payment-heading"
-          >
-            <h2 id="payment-heading" className="text-xl font-heading mb-4 items-center">
-              <button
-                onClick={() => setStep("shipping")}
-                className="mr-3 inline-flex items-center gap-2 text-neutral-700 hover:text-neutral-900"
-                aria-label="Back to shipping"
-              >
-                <FontAwesomeIcon icon={faArrowLeft} />
-                Back
-              </button>
-              <span>
-               Payment Method
-              </span>
-            </h2>
-
-            <div
-              className="flex flex-col gap-3"
-              role="radiogroup"
-              aria-label="Payment methods"
+            <motion.div
+              key="payment"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="bg-white rounded-2xl shadow-sm p-6"
+              role="region"
+              aria-labelledby="payment-heading"
             >
-              {paymentOptions.map((method) => {
-                const checked = paymentMethod === method.value;
-                return (
-                  <label
-                    key={method.value}
-                    className={`border p-3 rounded-xl cursor-pointer hover:border-primary transition flex items-center justify-between ${
-                      checked ? "ring-2 ring-primary/30 border-primary" : ""
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="payment"
-                        aria-checked={checked}
-                        checked={checked}
-                        onChange={() => {
-                          setPaymentMethod(method.value)
-                          setShippingOption({express: false, standard: false});
-                        }}
-                        className="accent-primary"
-                      />
-                      <div className="flex items-center gap-2">
-                        <FontAwesomeIcon
-                          icon={method.icon}
-                          className="w-4 h-4"
+              <h2 id="payment-heading" className="text-xl font-heading mb-4 items-center">
+                <button
+                  onClick={() => setStep("shipping")}
+                  className="mr-3 inline-flex items-center gap-2 text-neutral-700 hover:text-neutral-900"
+                  aria-label="Back to shipping"
+                >
+                  <FontAwesomeIcon icon={faArrowLeft} />
+                  Back
+                </button>
+                <span>
+                  Payment Method
+                </span>
+              </h2>
+
+              <div
+                className="flex flex-col gap-3"
+                role="radiogroup"
+                aria-label="Payment methods"
+              >
+                {paymentOptions.map((method) => {
+                  const checked = paymentMethod === method.value;
+                  return (
+                    <label
+                      key={method.value}
+                      className={`border p-3 rounded-xl cursor-pointer hover:border-primary transition flex items-center justify-between ${checked ? "ring-2 ring-primary/30 border-primary" : ""
+                        }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="payment"
+                          aria-checked={checked}
+                          checked={checked}
+                          onChange={() => {
+                            setPaymentMethod(method.value)
+                            setShippingOption({ express: false, standard: false });
+                          }}
+                          className="accent-primary"
                         />
-                        <div>
-                          <div className="font-medium">{method.label}</div>
+                        <div className="flex items-center gap-2">
+                          <FontAwesomeIcon
+                            icon={method.icon}
+                            className="w-4 h-4"
+                          />
+                          <div>
+                            <div className="font-medium">{method.label}</div>
                             <div className="text-xs text-neutral-500">
                               Fast & secure
                               {method.value !== 'cod' && (
                                 <span className="text-xs text-green-600 ml-1">
-                                 · Save 2% · Pay online
+                                  · Save 2% · Pay online
                                 </span>
                               )}
                             </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </label>
-                );
-              })}
-            </div>
+                    </label>
+                  );
+                })}
+              </div>
 
-            <motion.div
-            key="shipping-options"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="bg-white rounded-2xl shadow-sm p-2 mt-4"
-            role="region"
-            aria-labelledby="payment-heading"
-          >
-            {shippingOptions && (
-                <div className="flex flex-col gap-3">
-                <h3 className="font-heading text-sm font-bold">How soon you need your Joy?</h3>
+              <motion.div
+                key="shipping-options"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="bg-white rounded-2xl shadow-sm p-2 mt-4"
+                role="region"
+                aria-labelledby="payment-heading"
+              >
+                {shippingOptions && (
+                  <div className="flex flex-col gap-3">
+                    <h3 className="font-heading text-sm font-bold">How soon you need your Joy?</h3>
 
-              {shippingOptions.standard && (
-                <label className={`flex gap-3 border p-3 rounded-xl cursor-pointer
+                    {shippingOptions.standard && (
+                      <label className={`flex gap-3 border p-3 rounded-xl cursor-pointer
                   ${shippingOption?.standard ? "ring-2 ring-primary/30 border-primary" : ""}`}
-                >
-                  <input
-                    type="radio"
-                    name="shipping"
-                    checked={shippingOption?.standard}
-                    onChange={() => {
-                      let opt = shippingOptions?.standard;
-                      opt = {...opt, express: false, standard: true};
-                      setShippingOption(opt ?? null)
-                    }}
-                    className="accent-primary"
-                    disabled={isLoading}
-                  />
+                      >
+                        <input
+                          type="radio"
+                          name="shipping"
+                          checked={shippingOption?.standard}
+                          onChange={() => {
+                            let opt = shippingOptions?.standard;
+                            opt = { ...opt, express: false, standard: true };
+                            setShippingOption(opt ?? null)
+                          }}
+                          className="accent-primary"
+                          disabled={isLoading}
+                        />
 
-                  <div className="flex items-center gap-2">
-                    <FontAwesomeIcon icon={faTruck} className="w-4 h-4" />
-                    <span className="text-sm">
-                      Standard <span className="text-xs">(Est. delivery in {shippingOptions.standard.estimated_days} days)</span>
-                      <span className="block text-xs text-neutral-500">
-                        ₹{shippingOptions.standard.rate}
-                      </span>
-                    </span>
-                  </div>
-                  </label>
-                )}
+                        <div className="flex items-center gap-2">
+                          <FontAwesomeIcon icon={faTruck} className="w-4 h-4" />
+                          <span className="text-sm">
+                            Standard <span className="text-xs">(Est. delivery in {shippingOptions.standard.estimated_days} days)</span>
+                            <span className="block text-xs text-neutral-500">
+                              ₹{shippingOptions.standard.rate}
+                            </span>
+                          </span>
+                        </div>
+                      </label>
+                    )}
 
 
-              {shippingOptions.express && (
-                <label className={`flex gap-3 border p-3 rounded-xl cursor-pointer
+                    {shippingOptions.express && (
+                      <label className={`flex gap-3 border p-3 rounded-xl cursor-pointer
                   ${shippingOption?.express ? "ring-2 ring-primary/30 border-primary" : ""}`}
-                >
-                  <input
-                    type="radio"
-                    name="shipping"
-                    checked={shippingOption?.express}
-                    onChange={() => {
-                      let opt = shippingOptions?.express;
-                      opt = {...opt, express: true, standard: false};
-                      setShippingOption(opt ?? null)
-                      setCodPrepaidAccepted(false);
-                    }}
-                    className="accent-primary"
-                    disabled={isLoading}
-                  />
+                      >
+                        <input
+                          type="radio"
+                          name="shipping"
+                          checked={shippingOption?.express}
+                          onChange={() => {
+                            let opt = shippingOptions?.express;
+                            opt = { ...opt, express: true, standard: false };
+                            setShippingOption(opt ?? null)
+                            setCodPrepaidAccepted(false);
+                          }}
+                          className="accent-primary"
+                          disabled={isLoading}
+                        />
 
-                  <div className="flex items-center gap-2">
-                    <FontAwesomeIcon icon={faPlaneDeparture} className="w-4 h-4" />
-                    <span className="text-sm">
-                      Express  <span className="text-xs">(Est. delivery in {shippingOptions.express.estimated_days} days)</span>
-                      <span className="block text-xs text-neutral-500">
-                        ₹{shippingOptions.express.rate}
-                      </span>
-                    </span>
-                  </div>
-                </label>
-              )}
+                        <div className="flex items-center gap-2">
+                          <FontAwesomeIcon icon={faPlaneDeparture} className="w-4 h-4" />
+                          <span className="text-sm">
+                            Express  <span className="text-xs">(Est. delivery in {shippingOptions.express.estimated_days} days)</span>
+                            <span className="block text-xs text-neutral-500">
+                              ₹{shippingOptions.express.rate}
+                            </span>
+                          </span>
+                        </div>
+                      </label>
+                    )}
 
-              </div>)
-            }
-            </motion.div>
+                  </div>)
+                }
+              </motion.div>
 
-            <div className="mt-6">
-              {paymentMethod === "cod" && (
+              <div className="mt-6">
+                {paymentMethod === "cod" && (
                   <div className="my-4 p-4 rounded-xl bg-yellow-50 border border-yellow-300 text-sm text-yellow-900">
                     <p className="font-semibold mb-2">
                       ⚠️ Partial Prepaid Cash on Delivery
@@ -793,45 +813,45 @@ useEffect(() => {
                       </span>
                     </label>
                   </div>
-                )} 
-              <Button
-                onClick={handlePlaceOrder}
-                className="w-full font-cta text-white bg-accent1 hover:opacity-90"
-                disabled={
-                  loading ||
-                  !shippingOption ||
-                  (shippingOptions && !shippingOption.express && !shippingOption.standard) ||
-                  (paymentMethod === "cod" && !codPrepaidAccepted)
-                }
-                aria-disabled={loading}
-              >
-               {loading
-                  ? "Processing…"
-                  : paymentMethod === "cod"
-                    ? `Pay ₹${COD_PREPAID_AMOUNT} Now • Confirm COD Order`
-                    : `Pay ₹${finalPayable.toFixed(2)} • Place Order`}
+                )}
+                <Button
+                  onClick={handlePlaceOrder}
+                  className="w-full font-cta text-white bg-accent1 hover:opacity-90"
+                  disabled={
+                    loading ||
+                    !shippingOption ||
+                    (shippingOptions && !shippingOption.express && !shippingOption.standard) ||
+                    (paymentMethod === "cod" && !codPrepaidAccepted)
+                  }
+                  aria-disabled={loading}
+                >
+                  {loading
+                    ? "Processing…"
+                    : paymentMethod === "cod"
+                      ? `Pay ₹${COD_PREPAID_AMOUNT} Now • Confirm COD Order`
+                      : `Pay ₹${finalPayable.toFixed(2)} • Place Order`}
 
-              </Button>
+                </Button>
 
-              <div className="mt-4 text-center">
-                <div className="text-black font-bold">
-                  <FontAwesomeIcon
-                    icon={faLock}
-                    className="w-5 h-5 text-yellow-500 mr-2 inline-block"
-                  />
-                  100% Secure Checkout
-                  <FontAwesomeIcon
-                    icon={faCheckCircle}
-                    className="w-5 h-5 text-green-600 ml-2 inline-block"
-                  />
-                </div>
-                <div className="text-xs text-neutral-500 mt-1">
-                  We never store your card details. Payments are processed
-                  securely.
+                <div className="mt-4 text-center">
+                  <div className="text-black font-bold">
+                    <FontAwesomeIcon
+                      icon={faLock}
+                      className="w-5 h-5 text-yellow-500 mr-2 inline-block"
+                    />
+                    100% Secure Checkout
+                    <FontAwesomeIcon
+                      icon={faCheckCircle}
+                      className="w-5 h-5 text-green-600 ml-2 inline-block"
+                    />
+                  </div>
+                  <div className="text-xs text-neutral-500 mt-1">
+                    We never store your card details. Payments are processed
+                    securely.
+                  </div>
                 </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
           </>
         )}
       </AnimatePresence>

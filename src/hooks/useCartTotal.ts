@@ -11,28 +11,30 @@ interface CartTotal {
   shipping: number;
   compareTotal: number;
   finalPayable: number;
+  discountAmount: number; // For rendering applied discount details
 }
 
 export function useCartTotal(): CartTotal {
-  const { paymentMethod } = useCheckoutStore();
+  const { paymentMethod, appliedDiscount } = useCheckoutStore();
   const shippingOption = useCheckoutStore((s) => s.shippingOption);
 
-  const items = useCart((state) => state.items);
+  const { items, buyNowItem } = useCart();
+  const currentItems = buyNowItem ? [buyNowItem] : items;
 
   const giftWrapFee = 49;
 
-  const compareTotal = items.reduce(
+  const compareTotal = currentItems.reduce(
     (sum, item) =>
       sum + (item.compareAtPrice ? item.compareAtPrice : 0) * item.quantity,
     0
   );
 
-  const subtotal = items.reduce(
+  const subtotal = currentItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
 
-  const giftWrapTotal = items.reduce(
+  const giftWrapTotal = currentItems.reduce(
     (sum, item) => sum + (item.giftWrap ? giftWrapFee : 0),
     0
   );
@@ -54,8 +56,13 @@ export function useCartTotal(): CartTotal {
     const s = Number(subtotal || 0);
     const g = Number(giftWrapTotal || 0);
     const sh = typeof shipping === "number" ? shipping : 0;
-    return Number((s + g + sh - discountAmount).toFixed(2));
-  }, [subtotal, giftWrapTotal, shipping, discountAmount]);
+    const extraDiscount = Number(appliedDiscount?.amount || 0);
+
+    // Total discount is standard payment discount + promo code discount
+    const totalDeduction = discountAmount + extraDiscount;
+
+    return Math.max(0, Number((s + g + sh - totalDeduction).toFixed(2)));
+  }, [subtotal, giftWrapTotal, shipping, discountAmount, appliedDiscount]);
 
   // Plus Shipping
   total += shipping;
@@ -69,5 +76,6 @@ export function useCartTotal(): CartTotal {
     shipping,
     compareTotal,
     finalPayable,
+    discountAmount: Number(appliedDiscount?.amount || 0),
   };
 }

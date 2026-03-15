@@ -13,24 +13,20 @@ export default function HeroSection({
 }: {
   featuredProducts?: Product[];
 }) {
-  const addToCart = useCart((state) => state.addItem) as (
-    item: Product & { quantity: number; giftWrap: boolean },
-  ) => void;
+  
+  const setBuyNowItem = useCart((state) => state.setBuyNowItem);
   const router = useRouter();
   const product = featuredProducts?.[0];
-  const handleAddToCart = (p: Product) => {
-    addToCart({
+
+  const handleBuyNow = (e: React.MouseEvent<HTMLButtonElement>, p: Product) => {
+    e.preventDefault();
+    setBuyNowItem({
       ...p,
       _id: p._id,
       quantity: 1,
       giftWrap: p?.giftWrap,
       image: p.image,
-    });
-  };
-
-  const handleBuyNow = (e: React.MouseEvent<HTMLButtonElement>, p: Product) => {
-    e.preventDefault();
-    handleAddToCart(p);
+    } as unknown as Parameters<typeof setBuyNowItem>[0]);
     router.push("/checkout");
   };
   return (

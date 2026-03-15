@@ -1,25 +1,42 @@
-// app/api/razorpay/route.ts
 import Razorpay from "razorpay";
 import { NextResponse } from "next/server";
+import { calculateOrderAmount } from "@/lib/order-utils";
 
-export const runtime = "nodejs"; // ensure Node runtime (not edge)
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    // Expect amount to be in paise (integer)
-    const amount = typeof body.amount === "number" ? Math.round(body.amount) : NaN;
+    const { items, paymentMethod, promoCode, shippingRate, isCODPrepaid } = body;
 
-    if (!amount || isNaN(amount) || amount <= 0) {
-      return NextResponse.json({ error: "Invalid amount (expect paise integer)" }, { status: 400 });
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ error: "Empty or invalid cart items" }, { status: 400 });
+    }
+
+    // 1. Calculate the verified order amount on the server
+    const { finalPayable } = await calculateOrderAmount(
+      items,
+      paymentMethod,
+      promoCode,
+      shippingRate
+    );
+
+    // 2. Determine the actual amount to charge in Razorpay
+    // If it's a COD partial payment confirmation, the amount is fixed at ₹150
+    // Otherwise, charge the full final payable amount.
+    const amountToCharge = isCODPrepaid ? 150 : finalPayable;
+    const amountInPaise = Math.round(amountToCharge * 100);
+
+    if (amountInPaise <= 0) {
+      return NextResponse.json({ error: "Invalid payment amount calculated" }, { status: 400 });
     }
 
     const keyId = process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_SECRET_KEY || process.env.RAZORPAY_KEY_SECRET;
 
     if (!keyId || !keySecret) {
-      console.error("Razorpay keys missing in env");
-      return NextResponse.json({ error: "Razorpay not configured" }, { status: 500 });
+      console.error("Razorpay keys missing in environment variables");
+      return NextResponse.json({ error: "Razorpay integration not configured" }, { status: 500 });
     }
 
     const razorpay = new Razorpay({
@@ -28,7 +45,7 @@ export async function POST(req: Request) {
     });
 
     const options = {
-      amount: amount, // already in paise
+      amount: amountInPaise,
       currency: "INR",
       receipt: `TNV_${Date.now()}`,
       payment_capture: 1,
@@ -37,11 +54,8 @@ export async function POST(req: Request) {
     const order = await razorpay.orders.create(options);
     return NextResponse.json(order);
   } catch (error: unknown) {
-    const errObj = (typeof error === 'object' && error !== null) ? error as Record<string, unknown> : undefined;
-    const statusCode = errObj && typeof errObj['statusCode'] === 'number' ? errObj['statusCode'] : undefined;
-    const details = (errObj && ('error' in errObj ? errObj['error'] : undefined)) ?? error;
-    console.error("Razorpay Error:", statusCode ?? "", details ?? error);
-    const message = errObj && typeof errObj['message'] === 'string' ? errObj['message'] : String(error);
-    return NextResponse.json({ error: "Failed to create order", details: message }, { status: 500 });
+    console.error("Razorpay Order Error:", error);
+    const message = error instanceof Error ? error.message : 'Failed to create payment order';
+    return NextResponse.json({ error: "Failed to create payment order", details: message }, { status: 500 });
   }
 }

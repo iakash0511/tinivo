@@ -10,6 +10,7 @@ import { Product } from "@/interface/ProductInterface";
 
 export default function ProductInfo({ product }: { product: Product }) {
   const addToCart = useCart((state) => state.addItem) as (item: Product & { quantity: number; giftWrap: boolean }) => void;
+  const setBuyNowItem = useCart((state) => state.setBuyNowItem);
   const router = useRouter();
   const [giftWrap, setGiftWrap] = useState(false);
 
@@ -20,7 +21,7 @@ export default function ProductInfo({ product }: { product: Product }) {
   };
 
   const handleBuyNow = () => {
-    handleAddToCart();
+    setBuyNowItem({ ...product, _id: product._id, quantity: 1, giftWrap, image: product.images?.[0] } as unknown as Parameters<typeof setBuyNowItem>[0]);
     router.push("/checkout");
   };
 

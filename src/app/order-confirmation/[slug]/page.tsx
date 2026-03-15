@@ -10,11 +10,21 @@ import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { useCart } from "@/store/cart/cart-store"
 import { CheckoutInfo, useCheckoutStore } from "@/store/checkout/checkout-store"
 
+const EMPTY_CHECKOUT: CheckoutInfo = {
+  fullName: "",
+  phoneNumber: "",
+  email: "",
+  address: "",
+  city: "",
+  pincode: "",
+};
+
 export default function OrderConfirmation() {
   const params = useParams()
   const slug = params.slug as string
   const searchParams = useSearchParams();
   const userName = searchParams.get("name") || "Customer";
+
 
   const { clearCart } = useCart();
 
@@ -22,14 +32,6 @@ export default function OrderConfirmation() {
   const setShippingOption = useCheckoutStore((state) => state.setShippingOption);
 
   const router = useRouter();
-  const EMPTY_CHECKOUT: CheckoutInfo = {
-    fullName: "",
-    phoneNumber: "",
-    email: "",
-    address: "",
-    city: "",
-    pincode: "",
-  };
 
   useEffect(() => {
     if (!checkoutInfo || Object.values(checkoutInfo).length === 0) {
@@ -61,7 +63,7 @@ export default function OrderConfirmation() {
         setShippingOption(null);
     }
     frame()
-  }, [clearCart, setCheckoutInfo, setShippingOption, router, checkoutInfo, EMPTY_CHECKOUT]);
+  }, [clearCart, setCheckoutInfo, setShippingOption, router, checkoutInfo]);
 
   const orderId = slug;
 

@@ -1,14 +1,25 @@
 import { NextResponse } from 'next/server'
 
-
-// env (set these on Vercel / your host)
-const SHIPROCKET_EMAIL = process.env.SHIPROCKET_EMAIL
-const SHIPROCKET_PASSWORD = process.env.SHIPROCKET_PASSWORD
-const SHIPROCKET_SOURCE_PINCODE = process.env.SHIPROCKET_SOURCE_PINCODE
-
-// in-memory token cache (serverless may get cold resets — but this reduces auth calls)
+// In-memory token cache
 let tokenCache: { token?: string; expiresAt?: number } = {}
-async function getShiprocketToken() {
+
+interface ShiprocketAuthResponse {
+  token: string;
+}
+
+interface ShiprocketErrorResponse {
+  message?: string;
+  error?: string;
+}
+
+async function getShiprocketToken(): Promise<string> {
+  const EMAIL = process.env.SHIPROCKET_EMAIL;
+  const PASSWORD = process.env.SHIPROCKET_PASSWORD;
+
+  if (!EMAIL || !PASSWORD) {
+    throw new Error('SHIPROCKET_EMAIL or SHIPROCKET_PASSWORD is not set in the environment variables.');
+  }
+
   const now = Date.now()
   if (tokenCache.token && tokenCache.expiresAt && tokenCache.expiresAt > now + 5000) {
     return tokenCache.token
@@ -18,64 +29,65 @@ async function getShiprocketToken() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      email: SHIPROCKET_EMAIL,
-      password: SHIPROCKET_PASSWORD
+      email: EMAIL,
+      password: PASSWORD
     })
-  })
+  });
+
   if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`Shiprocket auth failed: ${res.status} ${text}`)
+    const text = await res.text();
+    throw new Error(`Shiprocket auth failed (${res.status}): ${text}`);
   }
-  const json = await res.json() as unknown
-  // token is typically at json.token; safely extract from unknown
-  const j = json as Record<string, unknown> | null
-  const tokenFromRoot = j && typeof j['token'] === 'string' ? (j['token'] as string) : undefined
-  const tokenFromData = j && typeof j['data'] === 'object' && j['data'] !== null && typeof (j['data'] as Record<string, unknown>)['token'] === 'string'
-    ? ((j['data'] as Record<string, unknown>)['token'] as string)
-    : undefined
-  const tokenFromId = j && typeof j['token_id'] === 'string' ? (j['token_id'] as string) : undefined
-  const token = tokenFromRoot || tokenFromData || tokenFromId
-  // Shiprocket token TTL isn't always provided; set a safe expiry (50 min)
-  tokenCache = { token, expiresAt: Date.now() + 50 * 60 * 1000 }
-  return token
+
+  const json = (await res.json()) as ShiprocketAuthResponse;
+
+  if (!json.token) {
+    throw new Error('Shiprocket auth succeeded but did not return a token.');
+  }
+
+  // Set safe expiry to 50 minutes (Shiprocket tokens generally last 1-10 days depending on config, but 50min is safe for serverless)
+  tokenCache = { token: json.token, expiresAt: Date.now() + 50 * 60 * 1000 }
+  return json.token
 }
 
 export async function POST(request: Request) {
-
   try {
     const body = await request.json()
 
+    // Provide sensible defaults strictly based on average apparel box
     const {
       delivery_postcode,
       weight = 0.5,
-      length,
-      breadth,
-      height,
+      length = 10,
+      breadth = 10,
+      height = 5,
       cod = 0,
     } = body
 
-
-    if (!delivery_postcode || !length || !breadth || !height) {
+    if (!delivery_postcode) {
       return NextResponse.json(
-        { error: "Missing shipping parameters" },
+        { error: "Missing required parameter: delivery_postcode" },
         { status: 400 }
       )
     }
 
-    if (!SHIPROCKET_EMAIL || !SHIPROCKET_PASSWORD || !SHIPROCKET_SOURCE_PINCODE) {
-      return NextResponse.json({ error: 'Shiprocket credentials or source pincode not set on server' }, { status: 500 })
+    const SOURCE_PINCODE = process.env.SHIPROCKET_SOURCE_PINCODE;
+
+    if (!SOURCE_PINCODE) {
+      return NextResponse.json(
+        { error: 'SHIPROCKET_SOURCE_PINCODE not set in the server environment configuration' },
+        { status: 500 }
+      )
     }
 
     const token = await getShiprocketToken()
-
-    console.log('Fetched Shiprocket token, proceeding to get rates', token)
 
     // Serviceability endpoint expects pickup and delivery pincode and weight
     const serviceUrl =
       "https://apiv2.shiprocket.in/v1/external/courier/serviceability/?" +
       new URLSearchParams({
-        pickup_postcode: SHIPROCKET_SOURCE_PINCODE,
-        delivery_postcode,
+        pickup_postcode: SOURCE_PINCODE,
+        delivery_postcode: String(delivery_postcode),
         weight: String(weight),
         cod: String(cod),
         length: String(length),
@@ -91,23 +103,41 @@ export async function POST(request: Request) {
       },
     })
 
-
-
     if (!sres.ok) {
-      const text = await sres.text()
-      console.error('Shiprocket serviceability error', sres.status, text)
-      return NextResponse.json({ error: 'Failed to fetch serviceability', details: text }, { status: sres.status })
+      let errorDetails = await sres.text();
+      try {
+        const parsed = JSON.parse(errorDetails) as ShiprocketErrorResponse;
+        if (parsed.message || parsed.error) {
+          errorDetails = parsed.message || parsed.error || errorDetails;
+        }
+      } catch {
+        // Not a JSON error
+      }
+      console.error(`Shiprocket serviceability error (${sres.status}):`, errorDetails)
+      return NextResponse.json(
+        { error: 'Failed to fetch shipping rates from provider', details: errorDetails }, 
+        { status: sres.status }
+      )
     }
 
     const serviceJson = await sres.json()
-    // serviceJson typically contains list of couriers with rates; normalize for your client
-    // Example shape depends on Shiprocket response; we'll return it under `options` directly
-    return NextResponse.json({ ok: true, options: serviceJson }, { status: 200, headers: { 'Cache-Control': 's-maxage=30, stale-while-revalidate=300' } })
+    
+    // Return the response, with caching headers so identical requests within 5min hit cache on Edge/Vercel
+    return NextResponse.json(
+      { ok: true, options: serviceJson }, 
+      { 
+        status: 200, 
+        headers: { 
+          'Cache-Control': 's-maxage=30, stale-while-revalidate=300' 
+        } 
+      }
+    )
   } catch (err: unknown) {
-    console.error('shiprocket/rates error', err)
-    const message = err && typeof err === 'object' && 'message' in err && typeof (err as { message?: unknown }).message === 'string'
-      ? (err as { message?: string }).message
-      : undefined
-    return NextResponse.json({ error: message || 'Server error' }, { status: 500 })
+    console.error('shiprocket/rates error:', err)
+    let message = 'Server error during shipping calculation';
+    if (err instanceof Error) {
+      message = err.message;
+    }
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

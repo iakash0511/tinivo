@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react'; // Added useState
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Logo } from '@/components/Logo';
-import { ShoppingBag, Menu } from 'lucide-react';
+import { ShoppingBag, Menu, User } from 'lucide-react';
 import { Sheet, SheetTrigger, SheetContent, SheetClose } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useCart } from '@/store/cart/cart-store';
@@ -17,7 +17,7 @@ export default function Header() {
   const totalItems = useCart((s) => s.totalItems());
   const isMobile = useIsMobile();
   const cartRef = useRef<SVGSVGElement | null>(null);
-  
+
   // 1. ADD MOUNTED STATE
   const [mounted, setMounted] = useState(false);
 
@@ -29,7 +29,7 @@ export default function Header() {
   const sections = [
     { name: 'Home', href: '/', show: true },
     { name: 'All Products', href: '/shop', show: true },
-    { name: 'Shop under ₹499', href: '/shop?max=499', show: pathname === '/'},
+    { name: 'Shop under ₹499', href: '/shop?max=499', show: pathname === '/' },
     { name: 'Combos', href: '/shop?category=combo', show: pathname === '/' },
     { name: 'Bestsellers', href: '#bestsellers', show: pathname === '/' },
     { name: 'Our Story', href: '/our-story', show: true },
@@ -52,49 +52,49 @@ export default function Header() {
     <header className="w-full sticky top-0 z-50 px-4 py-3 bg-light-bg/40 backdrop-blur border-b border-neutral-light shadow-sm">
       <div className="max-w-6xl mx-auto grid grid-cols-3 items-center gap-2">
         <div className="flex items-center">
-            <Sheet>
-              <SheetTrigger asChild>
-                <button
-                  aria-label="Open navigation"
-                  className="p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-                >
-                  <Menu className="w-6 h-6" />
-                </button>
-              </SheetTrigger>
+          <Sheet>
+            <SheetTrigger asChild>
+              <button
+                aria-label="Open navigation"
+                className="p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+            </SheetTrigger>
 
-              <SheetContent side="left" className="w-[86vw] max-w-xs bg-softPink">
-                <nav className="py-6 px-4 space-y-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <Link href="/" className="flex items-center gap-3">
-                      <Logo size={56} />
+            <SheetContent side="left" className="w-[86vw] max-w-xs bg-softPink">
+              <nav className="py-6 px-4 space-y-4">
+                <div className="flex items-center justify-between mb-4">
+                  <Link href="/" className="flex items-center gap-3">
+                    <Logo size={56} />
+                  </Link>
+                </div>
+
+                <ul className="flex flex-col space-y-3">
+                  {sections.filter((s) => s.show).map((section) => (
+                    <li key={section.name}>
+                      <SheetClose asChild>
+                        <Link
+                          href={section.href}
+                          className={`block py-2 px-2 rounded-md hover:bg-neutral-light/60 ${pathname === section.href ? 'text-primary font-semibold' : 'font-medium'}`}
+                        >
+                          {section.name}
+                        </Link>
+                      </SheetClose>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="mt-6 border-t pt-4">
+                  <SheetClose asChild>
+                    <Link href="/shop?sort=bestseller&perPage=10&page=1" className="inline-block w-full text-center py-2 rounded-md font-cta" style={{ backgroundColor: 'var(--color-accent1)', color: '#fff' }}>
+                      See Bestsellers
                     </Link>
-                  </div>
-
-                  <ul className="flex flex-col space-y-3">
-                    {sections.filter((s) => s.show).map((section) => (
-                      <li key={section.name}>
-                        <SheetClose asChild>
-                          <Link
-                            href={section.href}
-                            className={`block py-2 px-2 rounded-md hover:bg-neutral-light/60 ${pathname === section.href ? 'text-primary font-semibold' : 'font-medium'}`}
-                          >
-                            {section.name}
-                          </Link>
-                        </SheetClose>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <div className="mt-6 border-t pt-4">
-                    <SheetClose asChild>
-                      <Link href="/shop?sort=bestseller&perPage=10&page=1" className="inline-block w-full text-center py-2 rounded-md font-cta" style={{ backgroundColor: 'var(--color-accent1)', color: '#fff' }}>
-                        See Bestsellers
-                      </Link>
-                    </SheetClose>
-                  </div>
-                </nav>
-              </SheetContent>
-            </Sheet>
+                  </SheetClose>
+                </div>
+              </nav>
+            </SheetContent>
+          </Sheet>
         </div>
 
         <div className="flex items-center justify-center">
@@ -104,12 +104,16 @@ export default function Header() {
           </Link>
         </div>
 
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-end gap-3">
+          <Link href="/account" aria-label="My Account" className="p-2 text-neutral-800 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary hover:text-primary transition-colors">
+            <User className="w-6 h-6" />
+          </Link>
+
           <Sheet>
             <SheetTrigger asChild>
-              <button aria-label="Open cart" className="relative p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+              <button aria-label="Open cart" className="relative p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary text-neutral-800 hover:text-primary transition-colors">
                 <ShoppingBag ref={cartRef} className="w-6 h-6" />
-                
+
                 {/* 3. WRAP BADGE IN MOUNTED CHECK */}
                 {mounted && totalItems > 0 && (
                   <span className="absolute -top-1 -right-1 bg-primary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">

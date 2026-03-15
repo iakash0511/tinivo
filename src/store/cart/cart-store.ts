@@ -23,6 +23,8 @@ export type CartItem = {
 
 type CartStore = {
   items: CartItem[];
+  buyNowItem: CartItem | null;
+  setBuyNowItem: (item: CartItem | null) => void;
   addItem: (item: CartItem) => void;
   removeItem: (id: string) => void;
   updateItem: (id: string, updates: Partial<CartItem>) => void;
@@ -37,6 +39,9 @@ export const useCart = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
+      buyNowItem: null,
+
+      setBuyNowItem: (item) => set({ buyNowItem: item }),
 
       addItem: (item) =>
         set((state) => {
@@ -99,6 +104,7 @@ export const useCart = create<CartStore>()(
       // only persist the data, not the functions
       partialize: (state) => ({
         items: state.items,
+        buyNowItem: state.buyNowItem,
       }),
     }
   )

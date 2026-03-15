@@ -6,6 +6,7 @@ import { useCheckoutCTA } from '@/hooks/useCheckoutCta';
 import { useCartTotal } from '@/hooks/useCartTotal';
 import { useRouter } from 'next/navigation';
 import { SheetClose } from '../ui/sheet';
+import { useCart } from "@/store/cart/cart-store";
 
 export default function CartSummary() {
   const { subtotal, giftWrapTotal, total, shipping, compareTotal, finalPayable } = useCartTotal()
@@ -25,7 +26,7 @@ export default function CartSummary() {
       </div>
       <div className="flex justify-between text-sm text-neutral-700">
         <span>Shipping</span>
-        <span className={`${(shipping || finalPayable < 999) ? 'text-accent1' : 'text-green-600'}`}>{shipping ? shipping : finalPayable > 999 ? 'Free': 'Choose Shipping'}</span>
+        <span className={`${(shipping || finalPayable < 999) ? 'text-accent1' : 'text-green-600'}`}>{shipping ? shipping : finalPayable > 999 ? 'Free' : 'Choose Shipping'}</span>
       </div>
       {giftWrapTotal > 0 && (
         <div className="flex justify-between text-sm text-neutral-700">
@@ -49,7 +50,14 @@ export default function CartSummary() {
         🚚 Orders placed before <strong>7PM</strong> will be shipped **today**.
       </p>
       <SheetClose asChild>
-        <Button className="w-full font-cta text-sm rounded-xl mt-4 hover:bg-accent1 text-white" onClick={() => router.push('/checkout')}>
+        <Button
+          className="w-full font-cta text-sm rounded-xl mt-4 hover:bg-accent1 text-white"
+          onClick={() => {
+            const setBuyNowItem = useCart.getState().setBuyNowItem;
+            setBuyNowItem(null);
+            router.push('/checkout');
+          }}
+        >
           {useCheckoutCTA()}
         </Button>
       </SheetClose>

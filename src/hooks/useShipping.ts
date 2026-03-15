@@ -17,36 +17,44 @@ type UseShippingResult = {
   selected: ShippingOption | null;
 };
 
+// Types corresponding to Shiprocket's Courier object
+interface ShiprocketCourier {
+  courier_name: string;
+  courier_type: string | number;
+  courier_company_id: string | number;
+  etd_hours?: string | number;
+  estimated_delivery_days?: string | number;
+  rate?: string | number;
+  freight_charge?: string | number;
+}
 
-const normalize = (raw: unknown): ShippingOption[] => {
-  const r = raw as Record<string, unknown> | null;
-  const available = r?.['options'] as unknown;
-  if (!available) return [];
+interface ShiprocketServiceabilityResponse {
+  data?: {
+    available_courier_companies?: ShiprocketCourier[];
+  };
+}
 
-  // drill into expected shape safely
-  const optionsObj = r && 'options' in r ? (r['options'] as unknown) : undefined;
-  const data = optionsObj && typeof optionsObj === 'object' && optionsObj !== null
-    ? ((optionsObj as Record<string, unknown>)['data'] as Record<string, unknown> | undefined)
-    : undefined;
-  const arr = data && 'available_courier_companies' in data && Array.isArray(data['available_courier_companies'])
-    ? (data['available_courier_companies'] as unknown[])
-    : undefined;
+const normalize = (json: { options?: ShiprocketServiceabilityResponse }): ShippingOption[] => {
+  const arr = json?.options?.data?.available_courier_companies;
   if (!arr || !Array.isArray(arr)) return [];
 
-  return arr.map((o) => {
-    const opt = o as Record<string, unknown>;
-    const courier_name = typeof opt.courier_name === 'string' ? opt.courier_name : String(opt.courier_name ?? '');
-    const courier_type = String(opt.courier_type ?? '');
-    const ed = opt.estimated_delivery_days ?? opt.etd_hours;
-    const estimated_days = typeof ed === 'number' || typeof ed === 'string' ? (ed as string | number) : undefined;
-    const rate = Number((opt.rate ?? opt.freight_charge) ?? 0);
+  return arr.map((opt) => {
+    const courier_name = String(opt.courier_name || "Courier");
+    const courier_type = String(opt.courier_type || "");
+    
+    // Some couriers return etd_hours, some return estimated_delivery_days
+    const etd = opt.estimated_delivery_days ?? opt.etd_hours;
+    const estimated_days = typeof etd === "number" || typeof etd === "string" ? String(etd) : undefined;
+    
+    const rateRaw = opt.rate ?? opt.freight_charge ?? 0;
+    const rate = Number(rateRaw);
 
     return {
       courier_name,
       service_type: courier_type === "0" ? "Air" : "Surface",
       estimated_days,
       rate,
-      raw: opt,
+      raw: opt, // keep raw for internal routing if needed
     } as ShippingOption;
   });
 };
@@ -58,10 +66,12 @@ export function useShipping(
   const [options, setOptions] = useState<ShippingOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const cartItems = useCart((s) => s.items) as CartItem[];
-  const subtotal = useCart((s) =>
-    s.items.reduce((acc, it) => acc + it.price * it.quantity, 0)
-  );
+  const items = useCart((s) => s.items);
+  const buyNowItem = useCart((s) => s.buyNowItem);
+  const cartItems = (buyNowItem ? [buyNowItem] : items) as CartItem[];
+  
+  const subtotal = cartItems.reduce((acc, it) => acc + it.price * it.quantity, 0);
+  
   const paymentMethod = useCheckoutStore((s) => s.paymentMethod);
   const setShippingOption = useCheckoutStore((s) => s.setShippingOption);
   const setShippingOptions = useCheckoutStore((s) => s.setShippingOptions);
@@ -76,35 +86,35 @@ export function useShipping(
     );
     return w && w > 0 ? Number(w.toFixed(2)) : 0.5;
   }, [cartItems]);
+  
   const dimensions = useMemo(() => {
-  if (!cartItems.length) {
-    return { length: 10, breadth: 10, height: 5 }
-  }
+    if (!cartItems.length) {
+      return { length: 10, breadth: 10, height: 5 }
+    }
 
-  return {
-    length: Math.max(...cartItems.map(i => i.length || 10)),
-    breadth: Math.max(...cartItems.map(i => i.breadth || 10)),
-    height: Math.max(...cartItems.map(i => i.height || 5)),
-  }
-}, [cartItems])
-
+    return {
+      length: Math.max(...cartItems.map(i => i.length || 10)),
+      breadth: Math.max(...cartItems.map(i => i.breadth || 10)),
+      height: Math.max(...cartItems.map(i => i.height || 5)),
+    }
+  }, [cartItems])
 
   // keep latest params in a ref so the stable debounced fn can read them
   const latestParamsRef = useRef({
-  weight,
-  paymentMethod,
-  subtotal,
-  dimensions
-})
-
-useEffect(() => {
-  latestParamsRef.current = {
     weight,
     paymentMethod,
     subtotal,
     dimensions
-  }
-}, [weight, paymentMethod, subtotal, dimensions])
+  })
+
+  useEffect(() => {
+    latestParamsRef.current = {
+      weight,
+      paymentMethod,
+      subtotal,
+      dimensions
+    }
+  }, [weight, paymentMethod, subtotal, dimensions])
 
 
   // stable fetch function that reads current params from the ref
@@ -120,8 +130,7 @@ useEffect(() => {
     setError(null);
 
     try {
-      const { paymentMethod: pm, subtotal: declared_value, weight: w, dimensions } =
-  latestParamsRef.current;
+      const { paymentMethod: pm, subtotal: declared_value, weight: w, dimensions } = latestParamsRef.current;
       const cod = pm === "cod" ? "1" : "0";
       const declared = Math.round(declared_value || 0);
 
@@ -137,19 +146,11 @@ useEffect(() => {
           cod,
           declared,
         }),
-      })
-
-
+      });
 
       if (!res.ok) {
-        const txt = await res.json().catch(() => null) as unknown;
-        let errorMessage: string | null = null;
-        if (txt && typeof txt === 'object') {
-          const t = txt as Record<string, unknown>;
-          if (typeof t.error === 'string') errorMessage = t.error;
-          else if (typeof t.message === 'string') errorMessage = t.message;
-        }
-        throw new Error(errorMessage ?? `Shiprocket returned ${res.status}`);
+        const txt = await res.json().catch(() => ({}));
+        throw new Error(txt.error || txt.message || `API returned ${res.status}`);
       }
 
       const json = await res.json();
@@ -157,67 +158,63 @@ useEffect(() => {
       setOptions(normalized);
 
       if (normalized.length > 0) {
+        // Standard is ALWAYS the absolute cheapest option
+        const standard = [...normalized].sort((a, b) => (a.rate ?? 0) - (b.rate ?? 0))[0];
 
-        const standard = normalized
-          .sort((a, b) => (a.rate ?? 0) - (b.rate ?? 0))[0]
+        // Express candidates: options that are strictly FASTER than the standard option
+        const standardDays = Number(standard.estimated_days || 10);
+        
+        let expressCandidates = normalized.filter((opt) => {
+           const days = Number(opt.estimated_days || 10);
+           return days < standardDays;
+        });
 
-        const express = normalized
-          .map(o => {
-            const raw = o.raw as Record<string, unknown> | null;
-            const etdHours = raw && 'etd_hours' in raw ? raw['etd_hours'] : undefined;
-            const estimatedDelivery = raw && 'estimated_delivery_days' in raw ? raw['estimated_delivery_days'] : undefined;
-            const etd = typeof etdHours === "number"
-              ? etdHours
-              : (typeof estimatedDelivery === "number" || typeof estimatedDelivery === "string")
-                ? Number(estimatedDelivery) * 24
-                : Infinity;
+        // Out of available faster options, pick the cheapest one for the best customer experience
+        let express = expressCandidates.sort((a, b) => (a.rate ?? 0) - (b.rate ?? 0))[0];
 
-            return {
-              option: o,
-              etd,
-            };
-          })
-          .sort((a, b) => a.etd - b.etd)[0]?.option
+        // Rename them to Standard and Express for the UI
+        if (standard) standard.courier_name = "Standard";
+        if (express) express.courier_name = "Express";
 
-          setShippingOptions({
-            standard,
-            express
-          })
+        setShippingOptions({
+          standard,
+          express
+        });
+        
+        // Auto-select standard if nothing is selected yet
+        if (!selected) {
+           setShippingOption({ ...standard, express: false, standard: true });
+        }
       } else {
         setShippingOptions({});
         setShippingOption(null);
+        setError("No serviceable couriers found for this pincode.");
       }
     } catch (err: unknown) {
-      const message = err && typeof err === 'object' && 'message' in err && typeof (err as { message?: unknown }).message === 'string'
-        ? (err as { message?: string }).message
-        : null;
-      setError(message ?? "Failed to fetch shipping options");
+      const message = err instanceof Error ? err.message : "Failed to fetch shipping options";
+      setError(message);
       setOptions([]);
+      setShippingOptions({});
+      setShippingOption(null);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // create a *stable* debounced function — only recreate when forceRefreshKey changes
-  // this prevents recreation on every weight/subtotal/paymentMethod change
+  // create a *stable* debounced function
   const fetchOptionsCb = useRef<((pc: string) => Promise<void>) | undefined>(undefined);
-
-  // wrap fetchOptions in a stable ref so debounced can call latest impl
   fetchOptionsCb.current = fetchOptions;
 
   const forceRefreshKey = opts?.forceRefreshKey;
 
   type DebouncedFn = ((pc: string) => void) & { cancel: () => void };
-  const noopDebounced: DebouncedFn = Object.assign(() => {}, { cancel: () => {} });
+  const noopDebounced: DebouncedFn = Object.assign((pc: string) => {}, { cancel: () => {} });
   const debouncedRef = useRef<DebouncedFn>(noopDebounced);
 
-  // Recreate debounced function when `forceRefreshKey` changes.
   useEffect(() => {
-    const d = debounce((pc: string) => fetchOptionsCb.current && fetchOptionsCb.current(pc), 600) as DebouncedFn;
+    const d = debounce((pc: string) => fetchOptionsCb.current?.(pc), 600) as DebouncedFn;
     debouncedRef.current = d;
-    return () => {
-      d.cancel();
-    };
+    return () => d.cancel();
   }, [forceRefreshKey]);
 
   useEffect(() => {
@@ -227,15 +224,11 @@ useEffect(() => {
       return;
     }
 
-    // call the stable debounced function
     debouncedRef.current(pincode);
 
-    return () => {
-      debouncedRef.current.cancel();
-    };
+    return () => debouncedRef.current.cancel();
   }, [pincode, paymentMethod, subtotal, weight, forceRefreshKey]);
 
-  // public refresh to run immediate fetch using latest params
   const refresh = () => {
     if (pincode && /^[1-9][0-9]{5}$/.test(pincode)) {
       fetchOptions(pincode);
